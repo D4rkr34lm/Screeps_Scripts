@@ -1,0 +1,24 @@
+{
+  "name": "goeddle",
+  "version": "1.0.0",
+  "description": "My personal screeps scrips",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest --coverage"
+  },
+  "author": "Manuel Frohn",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "eslint": "^9.3.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "jest": "^29.7.0",
+    "prettier": "^3.2.5",
+    "ts-jest": "^29.1.3"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
