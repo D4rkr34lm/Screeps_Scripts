@@ -1,9 +1,10 @@
-import { GathererRole } from "../creepMemory";
+import { WorkerRole } from "../creepMemory";
 
 const _ = require("lodash");
 
-function tick(creep: Creep, room: Room): void {
-  const store = creep.memory as GathererRole;
+function tick(creep: Creep): void {
+  const store = creep.memory as WorkerRole;
+  const room = creep.room;
 
   if (creep.store.getUsedCapacity() === 0) {
     store.gathering = false;
