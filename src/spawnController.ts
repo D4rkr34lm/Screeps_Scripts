@@ -1,5 +1,5 @@
 import { RoleMemory } from "./creepMemory";
-import _ = require("lodash");
+const _ = require("lodash");
 
 export type Role = RoleMemory["role"];
 

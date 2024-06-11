@@ -1,4 +1,4 @@
-import _ = require("lodash");
+const _ = require("lodash");
 
 import spawnerTick from "./spawnController";
 import workerTick from "./behaviors/gatherer";
