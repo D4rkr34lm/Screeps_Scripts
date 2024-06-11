@@ -1,8 +1,10 @@
 const _ = require("lodash");
 
-import spawnerTick from "./spawnController";
 import workerTick from "./gatherer";
-import { RoleMemory } from "./creepMemory";
+import spawnerTick from "./spawnController";
+
+import { BasicCreepMemory, RoleMemory } from "./creepMemory";
+import { SpawnerMemory } from "./spawnController";
 
 export function loop() {
   const behaviors = {
@@ -29,6 +31,12 @@ function cleanMemory() {
   const inactivMemoryCellIds = _.difference(creepMemoryKeys, activCreepIds);
 
   for (const cellId of inactivMemoryCellIds) {
+    const deadMemory = Memory.creeps[cellId] as BasicCreepMemory;
+    if (hasValue(deadMemory.spawnedBy)) {
+      const spawnMemory = Game.spawns[deadMemory.spawnedBy].memory as SpawnerMemory;
+
+      spawnMemory[deadMemory.role]--;
+    }
     delete Memory.creeps[cellId];
   }
 }

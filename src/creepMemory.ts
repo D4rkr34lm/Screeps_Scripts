@@ -1,4 +1,9 @@
-export interface WorkerRole extends CreepMemory {
+export interface BasicCreepMemory extends CreepMemory {
+  role: string;
+  spawnedBy?: string;
+}
+
+export interface WorkerRole extends BasicCreepMemory {
   role: "worker";
   gathering: boolean;
 }

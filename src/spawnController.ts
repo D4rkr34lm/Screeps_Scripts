@@ -1,4 +1,4 @@
-import { RoleMemory } from "./creepMemory";
+import { BasicCreepMemory, RoleMemory } from "./creepMemory";
 const _ = require("lodash");
 
 export type Role = RoleMemory["role"];
@@ -46,7 +46,7 @@ function tick(spawner: StructureSpawn) {
 
       if (spawnResult === OK) {
         memory.currentPerRole[role]++;
-        initCreepMemory(name, role as Role);
+        initCreepMemory(name, role as Role, spawner);
       }
     }
   }
@@ -56,8 +56,9 @@ function initSpawner(spawner: StructureSpawn) {
   spawner.memory = spawnerDefaultConfig;
 }
 
-function initCreepMemory(creepId: string, role: Role) {
+function initCreepMemory(creepId: string, role: Role, spawner: StructureSpawn) {
   Memory.creeps[creepId] = roleDefaultConfigs[role];
+  (Memory.creeps[creepId] as BasicCreepMemory).spawnedBy = spawner.name;
 }
 
 export default tick;
