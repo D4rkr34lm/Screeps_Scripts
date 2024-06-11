@@ -6,9 +6,9 @@ function tick(creep: Creep): void {
   const store = creep.memory as WorkerRole;
   const room = creep.room;
 
-  if (creep.store.getUsedCapacity() === 0) {
+  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
     store.gathering = true;
-  } else if (creep.store.getFreeCapacity() === 0) {
+  } else if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
     store.gathering = false;
   }
 
@@ -23,7 +23,7 @@ function tick(creep: Creep): void {
     }
   } else {
     const spawns = room.find(FIND_MY_SPAWNS);
-    const fillableSpawns = spawns.filter((spawn) => spawn.store.getFreeCapacity() !== 0);
+    const fillableSpawns = spawns.filter((spawn) => spawn.store.getFreeCapacity(RESOURCE_ENERGY) !== 0);
 
     const constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
 
