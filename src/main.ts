@@ -1,7 +1,7 @@
 const _ = require("lodash");
 
 import spawnerTick from "./spawnController";
-import workerTick from "./behaviors/gatherer";
+import workerTick from "./gatherer";
 import { RoleMemory } from "./creepMemory";
 
 export function loop() {

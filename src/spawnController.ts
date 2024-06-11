@@ -43,6 +43,7 @@ function tick(spawner: StructureSpawn) {
     if (currentPerRole[role] < maxPerRole[role]) {
       const name = _.uniqueId(role + "-");
       spawner.spawnCreep(roleParts[role], name);
+      memory.currentPerRole[role]++;
       initCreepMemory(name, role as Role);
     }
   }
