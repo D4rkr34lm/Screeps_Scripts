@@ -5,6 +5,7 @@ import spawnerTick from "./spawnController";
 
 import { BasicCreepMemory, RoleMemory } from "./creepMemory";
 import { SpawnerMemory } from "./spawnController";
+import { hasValue } from "./utils";
 
 export function loop() {
   const behaviors = {
@@ -35,7 +36,7 @@ function cleanMemory() {
     if (hasValue(deadMemory.spawnedBy)) {
       const spawnMemory = Game.spawns[deadMemory.spawnedBy].memory as SpawnerMemory;
 
-      spawnMemory[deadMemory.role]--;
+      spawnMemory.currentPerRole[deadMemory.role]--;
     }
     delete Memory.creeps[cellId];
   }
