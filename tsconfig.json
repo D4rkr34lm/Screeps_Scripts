@@ -1,9 +1,11 @@
 {
-  "compilerOptions": {
-    "module": "CommonJS",
-    "removeComments": true,
-    "preserveConstEnums": true,
-    "outDir": "./build"
-  },
-  "include": ["./src/**/*"]
+  "files": [],
+  "references": [
+    {
+      "path": "tsconfig.dev.json"
+    },
+    {
+      "path": "tsconfig.app.json"
+    }
+  ]
 }
