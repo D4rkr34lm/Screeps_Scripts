@@ -3,11 +3,4 @@
   "include": [
     "./src/**/*.ts"
   ],
-  "compilerOptions": {
-    "paths": {
-      "game/*": [
-        "./src/typings/game/*"
-      ]
-    }
-  }
 }
