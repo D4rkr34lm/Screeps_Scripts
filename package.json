@@ -29,6 +29,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "lodash-es": "^4.17.23"
+    "lodash-es": "^4.17.23",
+    "neverthrow": "^8.2.0"
   }
 }

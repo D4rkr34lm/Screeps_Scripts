@@ -1,5 +1,6 @@
+import { Task } from "../tasks/taskService";
+import { useTaskStorage } from "../tasks/taskStorage";
 import { hasValue } from "../uitls";
-import { Task } from "./createTask";
 
 export function executeTask<TaskConstraints, TaskState>(context: {
   creep: Creep;
@@ -26,6 +27,9 @@ export function executeTask<TaskConstraints, TaskState>(context: {
   });
 
   if (hasValue(newState)) {
+    const taskStorage = useTaskStorage();
+
     task.state = newState;
+    taskStorage.saveTask(task);
   }
 }

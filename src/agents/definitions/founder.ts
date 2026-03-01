@@ -1,12 +1,12 @@
 import { first } from "lodash-es";
 import { getBodyCost } from "../../bodyParts";
-import { defineRole } from "../defineRole";
+import { defineAgent } from "../defineAgent";
 import { hasValue } from "../../uitls";
-import { executeTask } from "../../tasks/executeTask";
+import { executeTask } from "../../execution/executeTask";
 
 const level1Composition = [WORK, CARRY, MOVE];
 
-export const founderRole = defineRole<{
+export const founderRole = defineAgent<{
   currentState: "harvesting" | "executing-task" | "upgrading-controller";
 }>({
   name: "founder",
@@ -16,6 +16,9 @@ export const founderRole = defineRole<{
       parts: level1Composition,
     },
   ],
+  createDefaultMemory: () => ({
+    currentState: "harvesting",
+  }),
   behavior: ({ creep, room, memory, task }) => {
     switch (memory.currentState) {
       case "harvesting":
