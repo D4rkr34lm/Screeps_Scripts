@@ -1,7 +1,7 @@
 import { fillSpawnerTaskDefinition } from "./fillSpawner";
 
 export const taskDefinitions = {
-  fillSpawner: fillSpawnerTaskDefinition,
+  "fill-spawner": fillSpawnerTaskDefinition,
 } as const;
 
 export type TaskType = keyof typeof taskDefinitions;

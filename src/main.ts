@@ -7,11 +7,11 @@ import { agentDefinitions } from "./agents/definitions";
 import { useTaskService } from "./tasks/taskService";
 import { taskDefinitions } from "./tasks/definitions";
 
-export default function loop() {
+export function loop() {
   const agentStorage = useAgentStorage();
 
   console.log(`Debug mode is enabled - running tick ${Game.time}`);
-  console.log(`Current CPU bucket: ${Game.cpu.bucket}`);
+  console.log(`Current CPU bucket: ${Game.cpu.bucket ?? 0}`);
 
   const myCreeps = Game.creeps;
 
@@ -63,7 +63,7 @@ export default function loop() {
       return;
     }
 
-    taskService.createTask(taskDefinitions.fillSpawner, {
+    taskService.createTask(taskDefinitions["fill-spawner"], {
       spawnId: spawnId,
       totalAmount: 300,
     });

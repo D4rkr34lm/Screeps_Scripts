@@ -9,6 +9,7 @@ export const fillSpawnerTaskDefinition = defineTask<
   { amount: number }
 >({
   name: "fill-spawner",
+  maxAssignees: 1,
   createStartState: () => ({ amount: 0 }),
   isFinished: ({ constraints, state }) => {
     return state.amount >= constraints.totalAmount;
