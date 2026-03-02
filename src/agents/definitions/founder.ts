@@ -1,21 +1,16 @@
 import { first } from "lodash-es";
-import { getBodyCost } from "../../bodyParts";
 import { defineAgent } from "../defineAgent";
 import { hasValue } from "../../uitls";
 import { executeTask } from "../../execution/executeTask";
-
-const level1Composition = [WORK, CARRY, MOVE];
 
 export const founderRole = defineAgent<{
   currentState: "harvesting" | "executing-task" | "upgrading-controller";
 }>({
   name: "founder",
-  compositionsLevel: [
-    {
-      cost: getBodyCost(level1Composition),
-      parts: level1Composition,
-    },
-  ],
+  composition: {
+    baseParts: [WORK, CARRY, MOVE],
+    extraParts: [WORK, CARRY, MOVE],
+  },
   createDefaultMemory: () => ({
     currentState: "harvesting",
   }),

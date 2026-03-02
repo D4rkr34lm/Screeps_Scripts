@@ -2,6 +2,10 @@ import { first } from "lodash-es";
 import { AgentDefinition } from "./defineAgent";
 import { hasNoValue } from "../uitls";
 import { useAgentStorage } from "./agentStorage";
+import {
+  getMaximalCompositionFactor,
+  getScaledBodyParts,
+} from "./bodyComposition";
 
 export interface Agent<Memory> {
   id: string;
@@ -15,7 +19,6 @@ export function useAgentService() {
 
   function createAgent<Memory>(
     type: AgentDefinition<Memory>,
-    compositionLevel: number,
     room: Room,
   ): Agent<Memory> | null {
     const memory = type.createDefaultMemory();
@@ -37,25 +40,14 @@ export function useAgentService() {
       return null;
     }
 
-    const body = type.compositionsLevel[compositionLevel];
+    const bodyScalingFactor = getMaximalCompositionFactor(
+      type.composition,
+      room.energyAvailable,
+    );
 
-    if (hasNoValue(body)) {
-      console.error({
-        roomName: room.name,
-        typeName: type.name,
-        message: `No body found for composition level ${compositionLevel}`,
-      });
-      return null;
-    } else if (room.energyAvailable < body.cost) {
-      console.error({
-        roomName: room.name,
-        typeName: type.name,
-        message: `Not enough energy to spawn creep. Required: ${body.cost}, Available: ${room.energyAvailable}`,
-      });
-      return null;
-    }
+    const bodyParts = getScaledBodyParts(type.composition, bodyScalingFactor);
 
-    const spawnResult = roomSpawn.spawnCreep(body.parts, name);
+    const spawnResult = roomSpawn.spawnCreep(bodyParts, name);
 
     if (spawnResult !== OK) {
       console.error({

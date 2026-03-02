@@ -1,5 +1,5 @@
-import { BodyPart } from "../bodyParts";
 import { Task } from "../tasks/taskService";
+import { BodyComposition } from "./bodyComposition";
 
 type Behavior<Memory> = (context: {
   creep: Creep;
@@ -8,28 +8,23 @@ type Behavior<Memory> = (context: {
   task?: Task<any, any>;
 }) => undefined | Memory;
 
-export interface BodyCompositionLevel {
-  cost: number;
-  parts: BodyPart[];
-}
-
 export interface AgentDefinition<Memory> {
   name: string;
-  compositionsLevel: BodyCompositionLevel[];
+  composition: BodyComposition;
   createDefaultMemory: () => Memory;
   behavior: Behavior<Memory>;
 }
 
 export function defineAgent<Memory>({
   name,
-  compositionsLevel,
+  composition,
   createDefaultMemory,
   behavior,
 }: {
   name: string;
-  compositionsLevel: BodyCompositionLevel[];
+  composition: BodyComposition;
   createDefaultMemory: () => Memory;
   behavior: Behavior<Memory>;
 }): AgentDefinition<Memory> {
-  return { name, compositionsLevel, createDefaultMemory, behavior };
+  return { name, composition, createDefaultMemory, behavior };
 }
