@@ -1,9 +1,11 @@
-export interface TaskDefinition<TaskConstraints, TaskState> {
+export interface TaskDefinition<
+  TaskConstraints extends Record<string, unknown>,
+  TaskState extends Record<string, unknown>,
+> {
   name: string;
+  maxAssignees: number;
   createStartState: () => TaskState;
   isFinished: (context: {
-    creep: Creep;
-    room: Room;
     constraints: TaskConstraints;
     state: TaskState;
   }) => boolean;
@@ -15,17 +17,20 @@ export interface TaskDefinition<TaskConstraints, TaskState> {
   }) => TaskState | undefined;
 }
 
-export function defineTask<TaskConstraints, TaskState>({
+export function defineTask<
+  TaskConstraints extends Record<string, unknown>,
+  TaskState extends Record<string, unknown>,
+>({
   name,
+  maxAssignees,
   createStartState,
   execute,
   isFinished,
 }: {
   name: string;
+  maxAssignees: number;
   createStartState: () => TaskState;
   isFinished: (context: {
-    creep: Creep;
-    room: Room;
     constraints: TaskConstraints;
     state: TaskState;
   }) => boolean;
@@ -36,5 +41,5 @@ export function defineTask<TaskConstraints, TaskState>({
     state: TaskState;
   }) => TaskState | undefined;
 }): TaskDefinition<TaskConstraints, TaskState> {
-  return { name, execute, createStartState, isFinished };
+  return { name, maxAssignees, execute, createStartState, isFinished };
 }

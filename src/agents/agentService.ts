@@ -80,7 +80,19 @@ export function useAgentService() {
     return agent;
   }
 
+  function getIdleAgents(): Agent<any>[] {
+    const agents = agentStorage.listAgents();
+    return agents.filter(
+      (agent) =>
+        agent.creep.spawning ||
+        agent.creep.ticksToLive === undefined ||
+        agent.creep.ticksToLive > 1 ||
+        agent.memory.currentState === "idle",
+    );
+  }
+
   return {
     createAgent,
+    getIdleAgents,
   };
 }

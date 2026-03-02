@@ -4,7 +4,7 @@ import { hasValue } from "../../uitls";
 import { executeTask } from "../../execution/executeTask";
 
 export const founderRole = defineAgent<{
-  currentState: "harvesting" | "executing-task" | "upgrading-controller";
+  currentState: "harvesting" | "executing-task" | "idle";
 }>({
   name: "founder",
   composition: {
@@ -61,13 +61,13 @@ export const founderRole = defineAgent<{
             executeTask({ creep, room, task });
           } else {
             return {
-              currentState: "upgrading-controller",
+              currentState: "idle",
             };
           }
         }
         break;
 
-      case "upgrading-controller": {
+      case "idle": {
         if (creep.store.energy === 0) {
           return {
             currentState: "harvesting",
