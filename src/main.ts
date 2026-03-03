@@ -54,20 +54,29 @@ export function loop() {
     spawnCreep(definedRoles.founder, mySpawn);
   }
 
-  if (!tasks.some((task) => task.type === "fill-spawn")) {
-    const newTask = createTask(definedTasks["fill-spawn"], {
-      target: mySpawn.id,
-      energyOrigin: energySource.id,
-    });
+  if (tasks.length === 0) {
+    const taskSet = [
+      createTask(definedTasks["fill-spawn"], {
+        target: mySpawn.id,
+        energyOrigin: energySource.id,
+      }),
+      createTask(definedTasks["upgrade-controller"], {
+        target: controller.id,
+        energyOrigin: energySource.id,
+      }),
+      createTask(definedTasks["upgrade-controller"], {
+        target: controller.id,
+        energyOrigin: energySource.id,
+      }),
+      createTask(definedTasks["build-structure"], {
+        energyOriginId: energySource.id,
+      }),
+      createTask(definedTasks["build-structure"], {
+        energyOriginId: energySource.id,
+      }),
+    ];
 
-    tasks.push(newTask);
-  } else if (tasks.length < 5) {
-    const newTask = createTask(definedTasks["upgrade-controller"], {
-      target: controller.id,
-      energyOrigin: energySource.id,
-    });
-
-    tasks.push(newTask);
+    tasks.push(...taskSet);
   }
 
   creeps.forEach((creep) => {
