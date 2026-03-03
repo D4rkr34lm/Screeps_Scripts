@@ -1,5 +1,6 @@
 import { flatten, times } from "lodash-es";
-import { BodyPart, getBodyCost } from "../bodyParts";
+import { BodyPart, getBodyCost } from "./bodyParts";
+import { err, ok, Result } from "neverthrow";
 
 const MAX_BODY_PARTS = 50;
 
@@ -11,17 +12,15 @@ export interface BodyComposition {
 export function getScaledBodyParts(
   composition: BodyComposition,
   factor: number,
-): BodyPart[] {
+): Result<BodyPart[], "factor-too-low"> {
   if (factor < 1) {
-    throw new Error(
-      `Failed to scale BodyComposition. Factor must be at least 1. Received: ${factor}`,
-    );
+    return err("factor-too-low");
   }
 
-  return [
+  return ok([
     ...composition.baseParts,
     ...flatten(times(factor - 1, () => composition.extraParts)),
-  ];
+  ]);
 }
 
 export function getMaximalCompositionFactor(

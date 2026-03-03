@@ -1,11 +1,7 @@
-import { fillSpawnerTaskDefinition } from "./fillSpawner";
+import { fillSpawnTaskDefinition } from "./fill-spawner";
 
-export const taskDefinitions = {
-  "fill-spawner": fillSpawnerTaskDefinition,
-} as const;
+export const definedTasks = {
+  "fill-spawn": fillSpawnTaskDefinition,
+};
 
-export type TaskType = keyof typeof taskDefinitions;
-
-export function isTaskType(value: string): value is TaskType {
-  return value in taskDefinitions;
-}
+export type TaskType = keyof typeof definedTasks;

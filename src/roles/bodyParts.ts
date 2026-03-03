@@ -7,9 +7,9 @@ export const bodyPart = {
 } as const;
 
 export const bodyPartCost = {
-  [bodyPart.work]: 100,
-  [bodyPart.carry]: 50,
-  [bodyPart.move]: 50,
+  [WORK]: 100,
+  [CARRY]: 50,
+  [MOVE]: 50,
 } as const;
 
 export type BodyPart = keyof typeof bodyPart;
