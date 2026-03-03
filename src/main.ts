@@ -22,8 +22,13 @@ function spawnCreep(role: Role, spawn: StructureSpawn) {
 export function loop() {
   const mySpawn = Game.spawns["Spawn1"];
   const energySource = mySpawn?.room.find(FIND_SOURCES)[0];
+  const controller = mySpawn?.room.controller;
 
-  if (hasNoValue(mySpawn) || hasNoValue(energySource)) {
+  if (
+    hasNoValue(mySpawn) ||
+    hasNoValue(energySource) ||
+    hasNoValue(controller)
+  ) {
     return;
   }
 
@@ -49,9 +54,16 @@ export function loop() {
     spawnCreep(definedRoles.founder, mySpawn);
   }
 
-  if (tasks.length < 5) {
+  if (!tasks.some((task) => task.type === "fill-spawn")) {
     const newTask = createTask(definedTasks["fill-spawn"], {
       target: mySpawn.id,
+      energyOrigin: energySource.id,
+    });
+
+    tasks.push(newTask);
+  } else if (tasks.length < 5) {
+    const newTask = createTask(definedTasks["upgrade-controller"], {
+      target: controller.id,
       energyOrigin: energySource.id,
     });
 
