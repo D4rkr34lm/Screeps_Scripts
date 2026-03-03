@@ -5,18 +5,36 @@ import { definedRoles } from "./roles/definitions";
 import { createTask } from "./tasks/createTask";
 import { definedTasks } from "./tasks/definitions";
 import { hasNoValue, hasValue } from "./uitls";
+import {
+  getMaximalCompositionFactor,
+  getScaledBodyParts,
+} from "./roles/bodyComposition";
 
 function spawnCreep(role: Role, spawn: StructureSpawn) {
-  spawn.spawnCreep(
-    role.bodyComposition.baseParts,
-    `${role.name}-${Game.time}`,
-    {
-      memory: {
-        role: role.name,
-        assignedTask: null,
-      },
-    },
+  const availableEnergy = spawn.room.energyAvailable;
+
+  const scalingFactor = getMaximalCompositionFactor(
+    role.bodyComposition,
+    availableEnergy,
   );
+
+  const bodyPartsResult = getScaledBodyParts(
+    role.bodyComposition,
+    scalingFactor,
+  );
+
+  if (bodyPartsResult.isOk()) {
+    spawn.spawnCreep(
+      bodyPartsResult.value,
+      `${role.name}-${Math.random().toString(36)}`,
+      {
+        memory: {
+          role: role.name,
+          assignedTask: null,
+        },
+      },
+    );
+  }
 }
 
 export function loop() {
