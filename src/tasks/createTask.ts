@@ -1,5 +1,6 @@
 import { TaskDefinition } from "./defineTask";
 import { TaskType } from "./definitions";
+import { TaskPriority } from "./priority";
 
 export type Task<
   Type extends TaskType = TaskType,
@@ -8,6 +9,7 @@ export type Task<
   id: string;
   type: Type;
   parameters: Parameters;
+  priority: TaskPriority;
   assignedCreep: Creep | null;
 };
 
@@ -17,11 +19,13 @@ export function createTask<
 >(
   taskDefinition: TaskDefinition<Type, Parameters>,
   parameters: Parameters,
+  priority: TaskPriority,
 ): Task<Type, Parameters> {
   return {
     id: `${taskDefinition.name}-${Game.time}-${Math.random().toString(36)}`,
     type: taskDefinition.name,
     parameters,
+    priority,
     assignedCreep: null,
   };
 }

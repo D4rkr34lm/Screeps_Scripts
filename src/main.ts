@@ -1,11 +1,12 @@
-import { values } from "lodash-es";
-import { cleanMemory, getTasks, saveTasks } from "./memory";
+import { first, keyBy, keys, omitBy, values } from "lodash-es";
+import { cleanMemory, getCreepMemory, getTasks, saveTasks } from "./memory";
 import { Role } from "./roles/defineRole";
 import { definedRoles } from "./roles/definitions";
-import { createTask } from "./tasks/createTask";
+import { createTask, Task } from "./tasks/createTask";
 import { definedTasks } from "./tasks/definitions";
-import { hasNoValue, hasValue } from "./uitls";
+import { hasNoValue } from "./uitls";
 import { getMaximalScaledBodyParts } from "./roles/bodyComposition";
+import { TaskPriority } from "./tasks/priority";
 
 function spawnCreep(role: Role, spawn: StructureSpawn) {
   const availableEnergy = spawn.room.energyAvailable;
@@ -29,7 +30,7 @@ function spawnCreep(role: Role, spawn: StructureSpawn) {
   }
 }
 
-export function init() {
+function init() {
   const memory = Memory as { __initialized?: boolean };
 
   if (memory.__initialized) {
@@ -51,27 +52,155 @@ export function init() {
   }
 
   const startTasks = [
-    createTask(definedTasks["fill-spawn"], {
-      target: mySpawn.id,
-      energyOrigin: energySource.id,
-    }),
-    createTask(definedTasks["upgrade-controller"], {
-      target: controller.id,
-      energyOrigin: energySource.id,
-    }),
-    createTask(definedTasks["upgrade-controller"], {
-      target: controller.id,
-      energyOrigin: energySource.id,
-    }),
-    createTask(definedTasks["build-structure"], {
-      energyOriginId: energySource.id,
-    }),
-    createTask(definedTasks["build-structure"], {
-      energyOriginId: energySource.id,
-    }),
+    createTask(
+      definedTasks["upgrade-controller"],
+      {
+        target: controller.id,
+        energyOrigin: energySource.id,
+      },
+      TaskPriority.FALLBACK,
+    ),
+    createTask(
+      definedTasks["upgrade-controller"],
+      {
+        target: controller.id,
+        energyOrigin: energySource.id,
+      },
+      TaskPriority.FALLBACK,
+    ),
+    createTask(
+      definedTasks["upgrade-controller"],
+      {
+        target: controller.id,
+        energyOrigin: energySource.id,
+      },
+      TaskPriority.FALLBACK,
+    ),
+    createTask(
+      definedTasks["upgrade-controller"],
+      {
+        target: controller.id,
+        energyOrigin: energySource.id,
+      },
+      TaskPriority.FALLBACK,
+    ),
+    createTask(
+      definedTasks["upgrade-controller"],
+      {
+        target: controller.id,
+        energyOrigin: energySource.id,
+      },
+      TaskPriority.FALLBACK,
+    ),
   ];
 
-  saveTasks(startTasks);
+  saveTasks(keyBy(startTasks, (task) => task.id));
+
+  console.log("[INFO]: Memory initialized with default tasks");
+
+  const unifishedTasks = getUnfinishedTasks();
+
+  console.log("DEV");
+  keys(unifishedTasks).forEach((taskId) => {
+    console.log(`- ${taskId}: ${unifishedTasks[taskId]?.type}`);
+  });
+}
+
+function getUnfinishedTasks() {
+  const tasks = getTasks();
+
+  const unfinishedTasks = omitBy(tasks, (task) => {
+    const definition = definedTasks[task.type];
+
+    if (definition.isFinished?.(task.parameters as any)) {
+      console.log(
+        `[INFO][TASK:${task.type}]: Task finished and removed from memory`,
+      );
+      const assignedCreep = task.assignedCreep;
+
+      if (assignedCreep) {
+        const creepMemory = getCreepMemory(assignedCreep);
+        creepMemory.assignedTask = null;
+      }
+
+      return true;
+    } else {
+      return false;
+    }
+  });
+
+  return unfinishedTasks;
+}
+
+function assignTaskToCreep(
+  tasks: { [taskId: string]: Task },
+  task: Task,
+  creep: Creep,
+) {
+  const creepMemory = getCreepMemory(creep);
+  const priorAssignedTaskId = creepMemory.assignedTask;
+  const priorAssignedTask = tasks[priorAssignedTaskId ?? ""] ?? null;
+
+  if (priorAssignedTask?.id === task.id) {
+    return;
+  }
+
+  if (priorAssignedTask) {
+    priorAssignedTask.assignedCreep = null;
+  }
+
+  creepMemory.assignedTask = task.id;
+
+  if (task.assignedCreep && task.assignedCreep.name !== creep.name) {
+    const priorAssignee = task.assignedCreep;
+    const priorAssigneeMemory = getCreepMemory(priorAssignee);
+
+    priorAssigneeMemory.assignedTask = null;
+  }
+
+  task.assignedCreep = creep;
+}
+
+function assignTasksToCreeps(
+  tasks: { [taskId: string]: Task },
+  creeps: Creep[],
+) {
+  const unassignedTasksSortedByPriority = values(tasks)
+    .filter((task) => !task.assignedCreep)
+    .sort((a, b) => b.priority - a.priority);
+  const creepsSortedByAssignedTask = creeps.sort((a, b) => {
+    const aTaskId = getCreepMemory(a).assignedTask;
+    const aTask = tasks[aTaskId ?? ""] ?? null;
+
+    const bTaskId = getCreepMemory(b).assignedTask;
+    const bTask = tasks[bTaskId ?? ""] ?? null;
+
+    const aPriority = aTask ? aTask.priority : -1;
+    const bPriority = bTask ? bTask.priority : -1;
+
+    return aPriority - bPriority;
+  });
+
+  creepsSortedByAssignedTask.forEach((creep) => {
+    const nextPriorityTask = first(unassignedTasksSortedByPriority);
+
+    if (hasNoValue(nextPriorityTask)) {
+      return;
+    }
+
+    const creepMemory = getCreepMemory(creep);
+    if (hasNoValue(creepMemory.assignedTask)) {
+      assignTaskToCreep(tasks, nextPriorityTask, creep);
+      unassignedTasksSortedByPriority.pop();
+    } else {
+      const assignedTask = tasks[creepMemory.assignedTask];
+
+      if (assignedTask && assignedTask.priority < nextPriorityTask.priority) {
+        assignTaskToCreep(tasks, nextPriorityTask, creep);
+        unassignedTasksSortedByPriority.pop();
+      }
+    }
+  });
 }
 
 export function loop() {
@@ -89,32 +218,11 @@ export function loop() {
     return;
   }
 
-  const tasks = getTasks();
   const creeps = values(Game.creeps);
 
-  const remainingTasks = tasks.filter((task) => {
-    const definition = definedTasks[task.type];
+  const unfinishedTasks = getUnfinishedTasks();
 
-    if (definition.isFinished?.(task.parameters as any)) {
-      if (hasValue(task.assignedCreep)) {
-        const creepMemory = task.assignedCreep.memory as {
-          role: string;
-          assignedTask: string | null;
-        };
-        creepMemory.assignedTask = null;
-      }
-
-      console.log(
-        `[INFO][TASK:${task.type}]: Task finished and removed from memory`,
-      );
-
-      return false;
-    } else {
-      return true;
-    }
-  });
-
-  remainingTasks.forEach((task) => {
+  values(unfinishedTasks).forEach((task) => {
     if (task.assignedCreep) {
       const definition = definedTasks[task.type];
 
@@ -126,15 +234,19 @@ export function loop() {
   });
 
   if (
-    !remainingTasks.some((task) => task.type === "fill-spawn") &&
+    !values(unfinishedTasks).some((task) => task.type === "fill-spawn") &&
     mySpawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0
   ) {
-    remainingTasks.push(
-      createTask(definedTasks["fill-spawn"], {
+    const fillSpawnTask = createTask(
+      definedTasks["fill-spawn"],
+      {
         target: mySpawn.id,
         energyOrigin: energySource.id,
-      }),
+      },
+      TaskPriority.HIGH,
     );
+
+    unfinishedTasks[fillSpawnTask.id] = fillSpawnTask;
   }
 
   if (
@@ -145,27 +257,9 @@ export function loop() {
     spawnCreep(definedRoles.founder, mySpawn);
   }
 
-  creeps.forEach((creep) => {
-    const creepMemory = creep.memory as {
-      role: string;
-      assignedTask: string | null;
-    };
+  assignTasksToCreeps(unfinishedTasks, creeps);
 
-    if (hasValue(creepMemory.assignedTask)) {
-      return;
-    }
-
-    const availableTask = remainingTasks.find(
-      (task) => task.assignedCreep === null,
-    );
-
-    if (availableTask) {
-      availableTask.assignedCreep = creep;
-      creepMemory.assignedTask = availableTask.id;
-    }
-  });
-
-  saveTasks(remainingTasks);
+  saveTasks(unfinishedTasks);
 
   if (Game.time % 100 === 0) {
     cleanMemory();

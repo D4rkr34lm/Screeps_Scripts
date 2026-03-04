@@ -1,4 +1,4 @@
-import { toPairs } from "lodash-es";
+import { fromPairs, toPairs, values } from "lodash-es";
 import { Task } from "./tasks/createTask";
 import { hasNoValue } from "./uitls";
 import { TaskType } from "./tasks/definitions";
@@ -8,27 +8,37 @@ interface TaskMemory {
     type: TaskType;
     parameters: Record<string, unknown>;
     assignedCreep: string | null;
+    priority: number;
   };
 }
 
-export function getTasks(): Task[] {
+export function getTasks(): { [taskId: string]: Task } {
   const memory = Memory as { tasks?: TaskMemory };
 
   if (!memory.tasks) {
     memory.tasks = {};
   }
 
-  return toPairs(memory.tasks).map(([taskId, taskData]) => ({
-    id: taskId,
-    type: taskData.type,
-    parameters: taskData.parameters,
-    assignedCreep: taskData.assignedCreep
-      ? Game.creeps[taskData.assignedCreep] || null
-      : null,
-  }));
+  return fromPairs(
+    toPairs(memory.tasks).map(
+      ([taskId, taskData]) =>
+        [
+          taskId,
+          {
+            id: taskId,
+            type: taskData.type,
+            parameters: taskData.parameters,
+            assignedCreep: taskData.assignedCreep
+              ? Game.creeps[taskData.assignedCreep] || null
+              : null,
+            priority: taskData.priority,
+          },
+        ] as [string, Task],
+    ),
+  );
 }
 
-export function saveTasks(tasks: Task[]) {
+export function saveTasks(tasks: { [taskId: string]: Task }) {
   const memory = Memory as { tasks?: TaskMemory };
 
   if (!memory.tasks) {
@@ -37,11 +47,12 @@ export function saveTasks(tasks: Task[]) {
 
   const newMemory: TaskMemory = {};
 
-  tasks.forEach((task) => {
+  values(tasks).forEach((task) => {
     newMemory[task.id] = {
       type: task.type,
       parameters: task.parameters,
       assignedCreep: task.assignedCreep ? task.assignedCreep.name : null,
+      priority: task.priority,
     };
   });
 

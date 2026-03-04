@@ -32,6 +32,8 @@ export const fillSpawnTaskDefinition = defineTask<
       return true;
     }
 
-    return spawn.store.getFreeCapacity(RESOURCE_ENERGY) === 0;
+    return (
+      spawn.store.getFreeCapacity(RESOURCE_ENERGY) === 0 && !spawn.spawning
+    );
   },
 });
