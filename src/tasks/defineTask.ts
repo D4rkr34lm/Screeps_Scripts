@@ -4,6 +4,7 @@ export interface TaskDefinition<
 > {
   name: Name;
   execute: (args: Parameters & { creep: Creep }) => void;
+  isFinished?: (args: Parameters) => boolean;
 }
 
 export function defineTask<
@@ -12,12 +13,15 @@ export function defineTask<
 >({
   name,
   execute,
+  isFinished,
 }: {
   name: Name;
   execute: (args: Parameters & { creep: Creep }) => void;
+  isFinished?: (args: Parameters) => boolean;
 }): TaskDefinition<Name, Parameters> {
   return {
     name,
     execute,
+    isFinished,
   };
 }

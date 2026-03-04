@@ -35,15 +35,17 @@ export function saveTasks(tasks: Task[]) {
     memory.tasks = {};
   }
 
-  const taskMemory = memory.tasks;
+  const newMemory: TaskMemory = {};
 
   tasks.forEach((task) => {
-    taskMemory[task.id] = {
+    newMemory[task.id] = {
       type: task.type,
       parameters: task.parameters,
       assignedCreep: task.assignedCreep ? task.assignedCreep.name : null,
     };
   });
+
+  memory.tasks = newMemory;
 }
 
 interface CreepMemory {

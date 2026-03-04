@@ -9,7 +9,7 @@ export interface BodyComposition {
   extraParts: BodyPart[];
 }
 
-export function getScaledBodyParts(
+function getScaledBodyParts(
   composition: BodyComposition,
   factor: number,
 ): Result<BodyPart[], "factor-too-low"> {
@@ -23,7 +23,7 @@ export function getScaledBodyParts(
   ]);
 }
 
-export function getMaximalCompositionFactor(
+function getMaximalCompositionFactor(
   composition: BodyComposition,
   energyAvailable: number,
 ): number {
@@ -41,5 +41,19 @@ export function getMaximalCompositionFactor(
           composition.extraParts.length,
       ) + 1;
     return Math.min(extraPartsAffordable + 1, maxBySpawnBodyPartLimit);
+  }
+}
+
+export function getMaximalScaledBodyParts(
+  composition: BodyComposition,
+  energyAvailable: number,
+): Result<BodyPart[], "minimum-energy-not-met"> {
+  const factor = getMaximalCompositionFactor(composition, energyAvailable);
+  const scaledBodyPartsResult = getScaledBodyParts(composition, factor);
+
+  if (scaledBodyPartsResult.isOk()) {
+    return ok(scaledBodyPartsResult.value);
+  } else {
+    return err("minimum-energy-not-met");
   }
 }

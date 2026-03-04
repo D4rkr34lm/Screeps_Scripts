@@ -24,4 +24,14 @@ export const fillSpawnTaskDefinition = defineTask<
       }
     }
   },
+  isFinished: ({ target }) => {
+    const spawn = Game.getObjectById(target);
+
+    if (!spawn) {
+      console.log("[ERR][TASK:fill-spawn]: Invalid target");
+      return true;
+    }
+
+    return spawn.store.getFreeCapacity(RESOURCE_ENERGY) === 0;
+  },
 });

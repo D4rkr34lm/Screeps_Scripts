@@ -19,7 +19,7 @@ export function createTask<
   parameters: Parameters,
 ): Task<Type, Parameters> {
   return {
-    id: `${taskDefinition.name}-${Math.random().toString(36)}`,
+    id: `${taskDefinition.name}-${Game.time}-${Math.random().toString(36)}`,
     type: taskDefinition.name,
     parameters,
     assignedCreep: null,
