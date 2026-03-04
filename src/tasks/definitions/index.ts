@@ -1,5 +1,5 @@
 import { buildStructureTaskDefinition } from "./build-structure";
-import { fillSpawnTaskDefinition } from "./fill-spawner";
+import { fillSpawnTaskDefinition } from "./fill-spawn";
 import { upgradeControllerTaskDefinition } from "./upgrade-controller";
 
 export const definedTasks = {

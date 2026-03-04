@@ -1,4 +1,6 @@
+import { first } from "lodash-es";
 import { defineTask } from "../defineTask";
+import { hasNoValue } from "../../uitls";
 
 export const fillSpawnTaskDefinition = defineTask<
   "fill-spawn",
@@ -14,13 +16,32 @@ export const fillSpawnTaskDefinition = defineTask<
       return;
     }
 
+    const room = spawn.room;
+    const extensions = room
+      .find(FIND_MY_STRUCTURES)
+      .filter((structure) => structure.structureType === STRUCTURE_EXTENSION);
+
+    const targets = [spawn, ...extensions].filter(
+      (structure) => structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+    );
+
+    const targetStructure = first(targets);
+
+    if (hasNoValue(targetStructure)) {
+      return;
+    }
+
     if (creep.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
       if (creep.harvest(source) === ERR_NOT_IN_RANGE) {
         creep.moveTo(source, { visualizePathStyle: { stroke: "#ffaa00" } });
       }
     } else {
-      if (creep.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        creep.moveTo(spawn, { visualizePathStyle: { stroke: "#00aaff" } });
+      if (
+        creep.transfer(targetStructure, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE
+      ) {
+        creep.moveTo(targetStructure, {
+          visualizePathStyle: { stroke: "#00aaff" },
+        });
       }
     }
   },
@@ -32,8 +53,8 @@ export const fillSpawnTaskDefinition = defineTask<
       return true;
     }
 
-    return (
-      spawn.store.getFreeCapacity(RESOURCE_ENERGY) === 0 && !spawn.spawning
-    );
+    const room = spawn.room;
+
+    return room.energyCapacityAvailable === room.energyAvailable;
   },
 });
