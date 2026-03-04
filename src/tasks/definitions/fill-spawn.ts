@@ -31,7 +31,17 @@ export const fillSpawnTaskDefinition = defineTask<
       return;
     }
 
-    if (creep.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+    const creepMemory = creep.memory as { harvesting?: boolean };
+
+    if (hasNoValue(creepMemory.harvesting)) {
+      creepMemory.harvesting = true;
+    } else if (creep.store.energy === 0) {
+      creepMemory.harvesting = true;
+    } else if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
+      creepMemory.harvesting = false;
+    }
+
+    if (creepMemory.harvesting) {
       if (creep.harvest(source) === ERR_NOT_IN_RANGE) {
         creep.moveTo(source, { visualizePathStyle: { stroke: "#ffaa00" } });
       }

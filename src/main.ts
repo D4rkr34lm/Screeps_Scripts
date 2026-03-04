@@ -234,7 +234,8 @@ export function loop() {
   });
 
   if (
-    !values(unfinishedTasks).some((task) => task.type === "fill-spawn") &&
+    values(unfinishedTasks).filter((task) => task.type === "fill-spawn")
+      .length < 2 &&
     mySpawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0
   ) {
     const fillSpawnTask = createTask(
@@ -270,7 +271,7 @@ export function loop() {
   if (
     !mySpawn.spawning &&
     mySpawn.room.energyAvailable >= 300 &&
-    creeps.length < 5
+    creeps.length < 10
   ) {
     spawnCreep(definedRoles.founder, mySpawn);
   }
