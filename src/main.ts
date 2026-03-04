@@ -1,4 +1,4 @@
-import { first, keyBy, keys, omitBy, values } from "lodash-es";
+import { first, isEmpty, keyBy, keys, omitBy, values } from "lodash-es";
 import { cleanMemory, getCreepMemory, getTasks, saveTasks } from "./memory";
 import { Role } from "./roles/defineRole";
 import { definedRoles } from "./roles/definitions";
@@ -247,6 +247,24 @@ export function loop() {
     );
 
     unfinishedTasks[fillSpawnTask.id] = fillSpawnTask;
+  }
+
+  const constructionSites = mySpawn.room.find(FIND_CONSTRUCTION_SITES);
+  if (
+    !isEmpty(constructionSites) &&
+    values(unfinishedTasks).filter((task) => task.type === "build-structure")
+      .length < 3
+  ) {
+    const buildStructureTask = createTask(
+      definedTasks["build-structure"],
+      {
+        energyOriginId: energySource.id,
+        roomController: controller.id,
+      },
+      TaskPriority.MEDIUM,
+    );
+
+    unfinishedTasks[buildStructureTask.id] = buildStructureTask;
   }
 
   if (

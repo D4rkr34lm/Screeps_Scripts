@@ -1,9 +1,10 @@
+import { isEmpty } from "lodash-es";
 import { hasNoValue } from "../../uitls";
 import { defineTask } from "../defineTask";
 
 export const buildStructureTaskDefinition = defineTask<
   "build-structure",
-  { energyOriginId: Id<Source> }
+  { energyOriginId: Id<Source>; roomController: Id<StructureController> }
 >({
   name: "build-structure",
   execute: ({ creep, energyOriginId }) => {
@@ -41,5 +42,17 @@ export const buildStructureTaskDefinition = defineTask<
         creep.moveTo(target, { visualizePathStyle: { stroke: "#00aaff" } });
       }
     }
+  },
+  isFinished: ({ roomController }) => {
+    const controller = Game.getObjectById(roomController);
+
+    if (hasNoValue(controller)) {
+      console.log("[ERR][TASK:build-structure]: Invalid room controller");
+      return true;
+    }
+
+    const constructionSides = controller.room.find(FIND_CONSTRUCTION_SITES);
+
+    return isEmpty(constructionSides);
   },
 });
