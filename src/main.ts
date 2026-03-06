@@ -7,6 +7,8 @@ import { definedTasks } from "./tasks/definitions";
 import { hasNoValue } from "./uitls";
 import { getMaximalScaledBodyParts } from "./roles/bodyComposition";
 import { TaskPriority } from "./tasks/priority";
+import { ACCEPTABLE_HITS_LOSS } from "./constants";
+import { repairStructuresTaskDefinition } from "./tasks/definitions/repair-structures";
 
 function spawnCreep(role: Role, spawn: StructureSpawn) {
   const availableEnergy = spawn.room.energyAvailable;
@@ -208,12 +210,14 @@ export function loop() {
 
   const mySpawn = Game.spawns["Spawn1"];
   const energySource = mySpawn?.room.find(FIND_SOURCES)[0];
+  const source2 = mySpawn?.room.find(FIND_SOURCES)[1];
   const controller = mySpawn?.room.controller;
 
   if (
     hasNoValue(mySpawn) ||
     hasNoValue(energySource) ||
-    hasNoValue(controller)
+    hasNoValue(controller) ||
+    hasNoValue(source2)
   ) {
     return;
   }
@@ -266,6 +270,28 @@ export function loop() {
     );
 
     unfinishedTasks[buildStructureTask.id] = buildStructureTask;
+  }
+
+  const damagedStructures = mySpawn.room.find(FIND_STRUCTURES, {
+    filter: (structure) =>
+      structure.hits < structure.hitsMax - ACCEPTABLE_HITS_LOSS,
+  });
+
+  if (
+    !isEmpty(damagedStructures) &&
+    values(unfinishedTasks).filter((task) => task.type === "repair-structures")
+      .length < 1
+  ) {
+    const repairStructuresTask = createTask(
+      repairStructuresTaskDefinition,
+      {
+        energyOrigin: source2.id,
+        roomController: controller.id,
+      },
+      TaskPriority.HIGH,
+    );
+
+    unfinishedTasks[repairStructuresTask.id] = repairStructuresTask;
   }
 
   if (

@@ -1,0 +1,1 @@
+export const ACCEPTABLE_HITS_LOSS = 1000;
