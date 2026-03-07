@@ -1,3 +1,4 @@
+import { getEnergy } from "../../actions/getEnergy";
 import { hasNoValue } from "../../uitls";
 import { defineTask } from "../defineTask";
 
@@ -19,24 +20,13 @@ export const upgradeControllerTaskDefinition = defineTask<
 
     const creepMemory = creep.memory as { harvesting?: boolean };
 
-    if (hasNoValue(creepMemory.harvesting)) {
-      creepMemory.harvesting = true;
+    if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
+      creepMemory.harvesting = false;
     }
 
-    if (creepMemory.harvesting) {
-      if (creep.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-        if (creep.harvest(source) === ERR_NOT_IN_RANGE) {
-          creep.moveTo(source, { visualizePathStyle: { stroke: "#ffaa00" } });
-        }
-      } else {
-        creepMemory.harvesting = false;
-      }
+    if (creepMemory.harvesting || creep.store[RESOURCE_ENERGY] === 0) {
+      getEnergy(creep);
     } else {
-      if (creep.store.energy === 0) {
-        creepMemory.harvesting = true;
-        return;
-      }
-
       if (creep.upgradeController(controller) === ERR_NOT_IN_RANGE) {
         creep.moveTo(controller, { visualizePathStyle: { stroke: "#00aaff" } });
       }
