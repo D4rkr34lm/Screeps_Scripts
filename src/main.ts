@@ -12,7 +12,7 @@ import { Role } from "./roles/defineRole";
 import { definedRoles } from "./roles/definitions";
 import { createTask, Task } from "./tasks/createTask";
 import { definedTasks } from "./tasks/definitions";
-import { hasNoValue } from "./uitls";
+import { hasNoValue, hasValue } from "./uitls";
 import { getMaximalScaledBodyParts } from "./roles/bodyComposition";
 import { TaskPriority } from "./tasks/priority";
 import { ACCEPTABLE_HITS_LOSS } from "./constants";
@@ -313,10 +313,53 @@ export function loop() {
     unfinishedTasks[repairStructuresTask.id] = repairStructuresTask;
   }
 
+  if (controller.level > 1) {
+    const roomSources = mySpawn.room.find(FIND_SOURCES);
+    const staticMinerTasks = values(unfinishedTasks).filter(
+      (task) => task.type === "harvest-source",
+    );
+    const staticMiners = creeps.filter(
+      (creep) => getRole(creep).name === "static-miner",
+    );
+
+    if (
+      staticMiners.length < staticMinerTasks.length &&
+      mySpawn.room.energyAvailable >= 550 &&
+      !mySpawn.spawning
+    ) {
+      spawnCreep(definedRoles["static-miner"], mySpawn);
+    }
+
+    const unassignedSources = roomSources.filter((source) => {
+      return !staticMinerTasks.some(
+        (task) => task.parameters.source === source.id,
+      );
+    });
+
+    unassignedSources.forEach((source) => {
+      const containerNearSource = source.pos.findInRange(FIND_STRUCTURES, 1, {
+        filter: (structure) => structure.structureType === STRUCTURE_CONTAINER,
+      })[0];
+
+      if (hasValue(containerNearSource)) {
+        const harvestSourceTask = createTask(
+          definedTasks["harvest-source"],
+          {
+            source: source.id,
+            harvestPosition: containerNearSource.pos,
+          },
+          TaskPriority.HIGH,
+        );
+
+        unfinishedTasks[harvestSourceTask.id] = harvestSourceTask;
+      }
+    });
+  }
+
   if (
     !mySpawn.spawning &&
     mySpawn.room.energyAvailable >= 300 &&
-    creeps.length < 10
+    creeps.length < 5
   ) {
     spawnCreep(definedRoles.founder, mySpawn);
   }
