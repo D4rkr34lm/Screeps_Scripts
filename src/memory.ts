@@ -2,6 +2,7 @@ import { fromPairs, toPairs, values } from "lodash-es";
 import { Task } from "./tasks/createTask";
 import { hasNoValue } from "./uitls";
 import { TaskType } from "./tasks/definitions";
+import { RoleName } from "./roles/definitions";
 
 interface TaskMemory {
   [taskId: string]: {
@@ -60,7 +61,7 @@ export function saveTasks(tasks: { [taskId: string]: Task }) {
 }
 
 interface CreepMemory {
-  role: string;
+  role: RoleName;
   assignedTask: string | null;
 }
 

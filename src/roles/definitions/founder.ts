@@ -6,4 +6,10 @@ export const founderRole = defineRole({
     baseParts: [WORK, CARRY, MOVE],
     extraParts: [WORK, CARRY, MOVE],
   },
+  assignableTaskTypes: [
+    "build-structure",
+    "fill-spawn",
+    "upgrade-controller",
+    "repair-structures",
+  ],
 });

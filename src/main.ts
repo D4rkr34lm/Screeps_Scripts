@@ -1,4 +1,12 @@
-import { first, isEmpty, keyBy, keys, omitBy, values } from "lodash-es";
+import {
+  first,
+  includes,
+  isEmpty,
+  keyBy,
+  keys,
+  omitBy,
+  values,
+} from "lodash-es";
 import { cleanMemory, getCreepMemory, getTasks, saveTasks } from "./memory";
 import { Role } from "./roles/defineRole";
 import { definedRoles } from "./roles/definitions";
@@ -163,6 +171,12 @@ function assignTaskToCreep(
   task.assignedCreep = creep;
 }
 
+function getRole(creep: Creep): Role {
+  const roleName = getCreepMemory(creep).role;
+
+  return definedRoles[roleName];
+}
+
 function assignTasksToCreeps(
   tasks: { [taskId: string]: Task },
   creeps: Creep[],
@@ -184,7 +198,12 @@ function assignTasksToCreeps(
   });
 
   creepsSortedByAssignedTask.forEach((creep) => {
-    const nextPriorityTask = first(unassignedTasksSortedByPriority);
+    const assignableTasks = unassignedTasksSortedByPriority.filter((task) => {
+      const creepRole = getRole(creep);
+
+      return includes(creepRole.assignableTaskTypes, task.type);
+    });
+    const nextPriorityTask = first(assignableTasks);
 
     if (hasNoValue(nextPriorityTask)) {
       return;
