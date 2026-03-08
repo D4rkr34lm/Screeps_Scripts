@@ -1,3 +1,4 @@
+import { attackCreepsTaskDefinition } from "./attackCreeps";
 import { buildStructureTaskDefinition } from "./build-structure";
 import { fillSpawnTaskDefinition } from "./fill-spawn";
 import { harvestSourceTaskDefinition } from "./harvest-source";
@@ -10,6 +11,7 @@ export const definedTasks = {
   "build-structure": buildStructureTaskDefinition,
   "repair-structures": repairStructuresTaskDefinition,
   "harvest-source": harvestSourceTaskDefinition,
+  "attack-creeps": attackCreepsTaskDefinition,
 };
 
 export type TaskType = keyof typeof definedTasks;

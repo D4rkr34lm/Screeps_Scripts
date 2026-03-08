@@ -364,6 +364,36 @@ export function loop() {
     spawnCreep(definedRoles.founder, mySpawn);
   }
 
+  const enemyCreeps = mySpawn.room.find(FIND_HOSTILE_CREEPS);
+  if (
+    !isEmpty(enemyCreeps) &&
+    values(unfinishedTasks).filter((task) => task.type === "attack-creeps")
+      .length < 2
+  ) {
+    const attackCreepsTask = createTask(
+      definedTasks["attack-creeps"],
+      {
+        controllerId: controller.id,
+      },
+      TaskPriority.ASAP,
+    );
+
+    unfinishedTasks[attackCreepsTask.id] = attackCreepsTask;
+  }
+
+  const bruteCreeps = creeps.filter((creep) => getRole(creep).name === "brute");
+  const attackCreepsTasks = values(unfinishedTasks).filter(
+    (task) => task.type === "attack-creeps",
+  );
+
+  if (
+    attackCreepsTasks.length > bruteCreeps.length &&
+    mySpawn.room.energyAvailable >= 130 &&
+    !mySpawn.spawning
+  ) {
+    spawnCreep(definedRoles.brute, mySpawn);
+  }
+
   assignTasksToCreeps(unfinishedTasks, creeps);
 
   saveTasks(unfinishedTasks);

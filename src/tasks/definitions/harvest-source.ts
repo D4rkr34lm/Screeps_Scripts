@@ -8,8 +8,6 @@ export const harvestSourceTaskDefinition = defineTask<
   execute: ({ creep, source, harvestPosition }) => {
     const sourceObject = Game.getObjectById(source);
 
-    console.log("DEV");
-
     if (!sourceObject) {
       console.log("[ERR][TASK:harvest-source]: Invalid source");
       return;

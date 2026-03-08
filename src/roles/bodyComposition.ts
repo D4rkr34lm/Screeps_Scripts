@@ -7,6 +7,7 @@ const MAX_BODY_PARTS = 50;
 export interface BodyComposition {
   baseParts: BodyPart[];
   extraParts: BodyPart[];
+  sortParts?: (parts: BodyPart[]) => BodyPart[];
 }
 
 function getScaledBodyParts(
@@ -51,8 +52,14 @@ export function getMaximalScaledBodyParts(
   const factor = getMaximalCompositionFactor(composition, energyAvailable);
   const scaledBodyPartsResult = getScaledBodyParts(composition, factor);
 
+  const sortedBodyParts = scaledBodyPartsResult.isOk()
+    ? composition.sortParts
+      ? composition.sortParts(scaledBodyPartsResult.value)
+      : scaledBodyPartsResult.value
+    : [];
+
   if (scaledBodyPartsResult.isOk()) {
-    return ok(scaledBodyPartsResult.value);
+    return ok(sortedBodyParts);
   } else {
     return err("minimum-energy-not-met");
   }
