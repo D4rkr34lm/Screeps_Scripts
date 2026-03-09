@@ -17,7 +17,7 @@ function getBestSourceToMine(creep: Creep) {
   return targetSource;
 }
 
-export function getEnergy(creep: Creep) {
+function getBestContainerToWithdraw(creep: Creep) {
   const containersWithEnergy = creep.room
     .find(FIND_STRUCTURES, {
       filter: (structure) => structure.structureType === STRUCTURE_CONTAINER,
@@ -27,9 +27,38 @@ export function getEnergy(creep: Creep) {
 
   const originContainer = first(containersWithEnergy);
 
+  return originContainer;
+}
+
+export function getEnergy(creep: Creep) {
+  const originContainer = getBestContainerToWithdraw(creep);
+
   if (hasValue(originContainer)) {
-    if (creep.withdraw(originContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      creep.moveTo(originContainer, {
+    const creepMemory = creep.memory as {
+      harvesting?: boolean;
+      originContainer?: Id<StructureContainer>;
+    };
+
+    if (
+      hasNoValue(creepMemory.harvesting) ||
+      !creepMemory.harvesting ||
+      hasNoValue(creepMemory.originContainer)
+    ) {
+      creepMemory.harvesting = true;
+      creepMemory.originContainer = originContainer.id;
+    }
+
+    const container = Game.getObjectById(creepMemory.originContainer);
+
+    if (hasNoValue(container)) {
+      console.log(
+        `[ERR][getEnergy]: Invalid container ID ${creepMemory.originContainer}`,
+      );
+      return;
+    }
+
+    if (creep.withdraw(container, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      creep.moveTo(container, {
         visualizePathStyle: { stroke: "#ffaa00" },
       });
     }

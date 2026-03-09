@@ -12,11 +12,26 @@ import { Role } from "./roles/defineRole";
 import { definedRoles } from "./roles/definitions";
 import { createTask, Task } from "./tasks/createTask";
 import { definedTasks } from "./tasks/definitions";
-import { hasNoValue, hasValue } from "./uitls";
+import { hasNoValue, hasValue, TypedId } from "./uitls";
 import { getMaximalScaledBodyParts } from "./roles/bodyComposition";
 import { TaskPriority } from "./tasks/priority";
 import { ACCEPTABLE_HITS_LOSS } from "./constants";
 import { repairStructuresTaskDefinition } from "./tasks/definitions/repair-structures";
+import { Colony, initializeColony, loadColonies, storeColony } from "./colony";
+
+const CURRENT_SCRIPT_VERSION = 1;
+
+interface ScriptMeta {
+  latestInitializedVersion: number;
+  latestInitializationTime: number;
+}
+
+declare global {
+  interface Memory {
+    __meta?: ScriptMeta;
+    colonies?: Record<TypedId<Colony>, Colony>;
+  }
+}
 
 function spawnCreep(role: Role, spawn: StructureSpawn) {
   const availableEnergy = spawn.room.energyAvailable;
@@ -40,80 +55,33 @@ function spawnCreep(role: Role, spawn: StructureSpawn) {
   }
 }
 
-function init() {
-  const memory = Memory as { __initialized?: boolean };
+function startLoop() {
+  if (Memory.__meta?.latestInitializedVersion === CURRENT_SCRIPT_VERSION) {
+    const colonies = loadColonies();
 
-  if (memory.__initialized) {
-    return;
+    return {
+      colonies,
+    };
+  } else {
+    const colonies = values(Game.rooms)
+      .map((room) => (room.controller?.my ? initializeColony(room) : null))
+      .filter(hasValue);
+
+    Memory.__meta = {
+      latestInitializedVersion: CURRENT_SCRIPT_VERSION,
+      latestInitializationTime: Game.time,
+    };
+
+    return {
+      colonies: keyBy(colonies, (colony) => colony.id),
+    };
   }
+}
 
-  memory.__initialized = true;
+function endLoop(context: ReturnType<typeof startLoop>) {
+  const { colonies } = context;
 
-  const mySpawn = Game.spawns["Spawn1"];
-  const energySource = mySpawn?.room.find(FIND_SOURCES)[0];
-  const controller = mySpawn?.room.controller;
-
-  if (
-    hasNoValue(mySpawn) ||
-    hasNoValue(energySource) ||
-    hasNoValue(controller)
-  ) {
-    return;
-  }
-
-  const startTasks = [
-    createTask(
-      definedTasks["upgrade-controller"],
-      {
-        target: controller.id,
-        energyOrigin: energySource.id,
-      },
-      TaskPriority.FALLBACK,
-    ),
-    createTask(
-      definedTasks["upgrade-controller"],
-      {
-        target: controller.id,
-        energyOrigin: energySource.id,
-      },
-      TaskPriority.FALLBACK,
-    ),
-    createTask(
-      definedTasks["upgrade-controller"],
-      {
-        target: controller.id,
-        energyOrigin: energySource.id,
-      },
-      TaskPriority.FALLBACK,
-    ),
-    createTask(
-      definedTasks["upgrade-controller"],
-      {
-        target: controller.id,
-        energyOrigin: energySource.id,
-      },
-      TaskPriority.FALLBACK,
-    ),
-    createTask(
-      definedTasks["upgrade-controller"],
-      {
-        target: controller.id,
-        energyOrigin: energySource.id,
-      },
-      TaskPriority.FALLBACK,
-    ),
-  ];
-
-  saveTasks(keyBy(startTasks, (task) => task.id));
-
-  console.log("[INFO]: Memory initialized with default tasks");
-
-  const unifishedTasks = getUnfinishedTasks();
-
-  console.log("DEV");
-  keys(unifishedTasks).forEach((taskId) => {
-    console.log(`- ${taskId}: ${unifishedTasks[taskId]?.type}`);
-  });
+  values(colonies).forEach(storeColony);
 }
 
 function getUnfinishedTasks() {
@@ -225,7 +193,7 @@ function assignTasksToCreeps(
 }
 
 export function loop() {
-  init();
+  const { colonies } = startLoop();
 
   const mySpawn = Game.spawns["Spawn1"];
   const energySource = mySpawn?.room.find(FIND_SOURCES)[0];
@@ -397,6 +365,8 @@ export function loop() {
   assignTasksToCreeps(unfinishedTasks, creeps);
 
   saveTasks(unfinishedTasks);
+
+  endLoop({ colonies });
 
   if (Game.time % 100 === 0) {
     cleanMemory();

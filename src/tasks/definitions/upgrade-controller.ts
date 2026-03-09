@@ -4,14 +4,13 @@ import { defineTask } from "../defineTask";
 
 export const upgradeControllerTaskDefinition = defineTask<
   "upgrade-controller",
-  { target: Id<StructureController>; energyOrigin: Id<Source> }
+  { target: Id<StructureController>; targetLevel: number }
 >({
   name: "upgrade-controller",
-  execute: ({ creep, target, energyOrigin }) => {
+  execute: ({ creep, target }) => {
     const controller = Game.getObjectById(target);
-    const source = Game.getObjectById(energyOrigin);
 
-    if (hasNoValue(controller) || hasNoValue(source)) {
+    if (hasNoValue(controller)) {
       console.log(
         "[ERR][TASK:upgrade-controller]: Invalid target or energy origin",
       );
@@ -31,5 +30,17 @@ export const upgradeControllerTaskDefinition = defineTask<
         creep.moveTo(controller, { visualizePathStyle: { stroke: "#00aaff" } });
       }
     }
+  },
+  isFinished: ({ target, targetLevel }) => {
+    const controller = Game.getObjectById(target);
+
+    if (hasNoValue(controller)) {
+      console.log(
+        "[ERR][TASK:upgrade-controller]: Invalid target or energy origin",
+      );
+      return true;
+    }
+
+    return controller.level >= targetLevel;
   },
 });
