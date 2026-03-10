@@ -38,10 +38,8 @@ export type ManagedResource =
   | DevelopingResource
   | DevelopedResource;
 
-export function developResource(
-  resource: UndevelopedResource,
-): DevelopingResource {
-  const target = Resolver.getSource(resource.resource.id);
+function getOptimalOutputPosition(resource: MinableResource): RoomPosition {
+  const target = Resolver.getSource(resource.id);
 
   const targetPosition = target.pos;
 
@@ -56,9 +54,17 @@ export function developResource(
 
   if (hasNoValue(constructionSitePosition)) {
     throw new Error(
-      `No valid construction site position found for resource ${resource.resource.id}`,
+      `No valid construction site position found for resource ${resource.id} of type ${resource.type}`,
     );
   }
+
+  return constructionSitePosition;
+}
+
+export function developResource(
+  resource: UndevelopedResource,
+): DevelopingResource {
+  const constructionSitePosition = getOptimalOutputPosition(resource.resource);
 
   const constructionSiteResult =
     constructionSitePosition.createConstructionSite(STRUCTURE_CONTAINER);

@@ -1,11 +1,11 @@
 import { isEmpty } from "lodash-es";
-import { hasNoValue } from "../../uitls";
+import { hasNoValue, TypedId } from "../../uitls";
 import { defineTask } from "../defineTask";
 import { getEnergy } from "../../actions/getEnergy";
 
 export const buildStructureTaskDefinition = defineTask<
   "build-structure",
-  { roomController: Id<StructureController> }
+  { room: TypedId<Room> }
 >({
   name: "build-structure",
   execute: ({ creep }) => {

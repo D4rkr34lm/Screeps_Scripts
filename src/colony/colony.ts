@@ -1,10 +1,14 @@
-import { getNewId, TypedId } from "./uitls";
-import { initializeResource, ManagedResource } from "./resources";
+import { ManagedResource, initializeResource } from "../resources";
+import { Task } from "../tasks/createTask";
+import { getNewId, TypedId } from "../uitls";
+import { ColonyStageName } from "./stages";
 
 export interface Colony {
   id: TypedId<this>;
+  currentStage: ColonyStageName;
   room: TypedId<Room>;
   resources: ManagedResource[];
+  tasks: Task[];
 }
 
 export function storeColony(colony: Colony) {
@@ -28,8 +32,10 @@ export function initializeColony(room: Room): Colony {
 
   const newColony: Colony = {
     id: getNewId<Colony>(),
+    currentStage: "founding",
     room: room.name as TypedId<Room>,
     resources: managedResources,
+    tasks: [],
   };
 
   return newColony;

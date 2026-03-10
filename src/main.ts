@@ -5,6 +5,7 @@ import {
   keyBy,
   keys,
   omitBy,
+  partition,
   values,
 } from "lodash-es";
 import { cleanMemory, getCreepMemory, getTasks, saveTasks } from "./memory";
@@ -17,13 +18,20 @@ import { getMaximalScaledBodyParts } from "./roles/bodyComposition";
 import { TaskPriority } from "./tasks/priority";
 import { ACCEPTABLE_HITS_LOSS } from "./constants";
 import { repairStructuresTaskDefinition } from "./tasks/definitions/repair-structures";
-import { Colony, initializeColony, loadColonies, storeColony } from "./colony";
+import {
+  Colony,
+  initializeColony,
+  loadColonies,
+  storeColony,
+} from "./colony/colony";
+import { Resolver } from "./resolver";
+import { definedColonyStages } from "./colony/stages";
 
 const CURRENT_SCRIPT_VERSION = 1;
 
 interface ScriptMeta {
-  latestInitializedVersion: number;
-  latestInitializationTime: number;
+  version: number;
+  startTime: number;
 }
 
 declare global {
@@ -56,7 +64,7 @@ function spawnCreep(role: Role, spawn: StructureSpawn) {
 }
 
 function startLoop() {
-  if (Memory.__meta?.latestInitializedVersion === CURRENT_SCRIPT_VERSION) {
+  if (Memory.__meta?.version === CURRENT_SCRIPT_VERSION) {
     const colonies = loadColonies();
 
     return {
@@ -68,8 +76,8 @@ function startLoop() {
       .filter(hasValue);
 
     Memory.__meta = {
-      latestInitializedVersion: CURRENT_SCRIPT_VERSION,
-      latestInitializationTime: Game.time,
+      version: CURRENT_SCRIPT_VERSION,
+      startTime: Game.time,
     };
 
     return {
@@ -195,180 +203,76 @@ function assignTasksToCreeps(
 export function loop() {
   const { colonies } = startLoop();
 
-  const mySpawn = Game.spawns["Spawn1"];
-  const energySource = mySpawn?.room.find(FIND_SOURCES)[0];
-  const source2 = mySpawn?.room.find(FIND_SOURCES)[1];
-  const controller = mySpawn?.room.controller;
+  // Colony execution
+  values(colonies).forEach((colony) => {
+    const resolvedTasksWithAssignee = colony.tasks
+      .map((task) => {
+        const resolvedAssignee = hasValue(task.assigneeId)
+          ? Resolver.getCreep(task.assigneeId)
+          : null;
 
-  if (
-    hasNoValue(mySpawn) ||
-    hasNoValue(energySource) ||
-    hasNoValue(controller) ||
-    hasNoValue(source2)
-  ) {
-    return;
-  }
+        if (hasNoValue(resolvedAssignee)) {
+          return null;
+        } else {
+          return {
+            type: definedTasks[task.type],
+            assignee: resolvedAssignee,
+            task,
+          };
+        }
+      })
+      .filter(hasValue);
 
-  const creeps = values(Game.creeps);
-
-  const unfinishedTasks = getUnfinishedTasks();
-
-  values(unfinishedTasks).forEach((task) => {
-    if (task.assignedCreep) {
-      const definition = definedTasks[task.type];
-
-      definition.execute({
-        creep: task.assignedCreep,
-        ...(task.parameters as any),
-      });
-    }
-  });
-
-  if (
-    values(unfinishedTasks).filter((task) => task.type === "fill-spawn")
-      .length < 2 &&
-    mySpawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-  ) {
-    const fillSpawnTask = createTask(
-      definedTasks["fill-spawn"],
-      {
-        target: mySpawn.id,
-        energyOrigin: energySource.id,
+    const [finishedTasks, unfinishedTasks] = partition(
+      resolvedTasksWithAssignee,
+      ({ type, task }) => {
+        if (type.isFinished?.(task.parameters as any)) {
+          return false;
+        } else {
+          return true;
+        }
       },
-      TaskPriority.HIGH,
     );
 
-    unfinishedTasks[fillSpawnTask.id] = fillSpawnTask;
-  }
-
-  const constructionSites = mySpawn.room.find(FIND_CONSTRUCTION_SITES);
-  if (
-    !isEmpty(constructionSites) &&
-    values(unfinishedTasks).filter((task) => task.type === "build-structure")
-      .length < 3
-  ) {
-    const buildStructureTask = createTask(
-      definedTasks["build-structure"],
-      {
-        energyOriginId: energySource.id,
-        roomController: controller.id,
-      },
-      TaskPriority.MEDIUM,
-    );
-
-    unfinishedTasks[buildStructureTask.id] = buildStructureTask;
-  }
-
-  const damagedStructures = mySpawn.room.find(FIND_STRUCTURES, {
-    filter: (structure) =>
-      structure.hits < structure.hitsMax - ACCEPTABLE_HITS_LOSS,
-  });
-
-  if (
-    !isEmpty(damagedStructures) &&
-    values(unfinishedTasks).filter((task) => task.type === "repair-structures")
-      .length < 1
-  ) {
-    const repairStructuresTask = createTask(
-      repairStructuresTaskDefinition,
-      {
-        energyOrigin: source2.id,
-        roomController: controller.id,
-      },
-      TaskPriority.HIGH,
-    );
-
-    unfinishedTasks[repairStructuresTask.id] = repairStructuresTask;
-  }
-
-  if (controller.level > 1) {
-    const roomSources = mySpawn.room.find(FIND_SOURCES);
-    const staticMinerTasks = values(unfinishedTasks).filter(
-      (task) => task.type === "harvest-source",
-    );
-    const staticMiners = creeps.filter(
-      (creep) => getRole(creep).name === "static-miner",
-    );
-
-    if (
-      staticMiners.length < staticMinerTasks.length &&
-      mySpawn.room.energyAvailable >= 550 &&
-      !mySpawn.spawning
-    ) {
-      spawnCreep(definedRoles["static-miner"], mySpawn);
-    }
-
-    const unassignedSources = roomSources.filter((source) => {
-      return !staticMinerTasks.some(
-        (task) => task.parameters.source === source.id,
+    finishedTasks.forEach(({ task, assignee }) => {
+      console.log(
+        `[INFO][TASK:${task.type}]: Task finished and removed from colony`,
       );
-    });
 
-    unassignedSources.forEach((source) => {
-      const containerNearSource = source.pos.findInRange(FIND_STRUCTURES, 1, {
-        filter: (structure) => structure.structureType === STRUCTURE_CONTAINER,
-      })[0];
-
-      if (hasValue(containerNearSource)) {
-        const harvestSourceTask = createTask(
-          definedTasks["harvest-source"],
-          {
-            source: source.id,
-            harvestPosition: containerNearSource.pos,
-          },
-          TaskPriority.HIGH,
-        );
-
-        unfinishedTasks[harvestSourceTask.id] = harvestSourceTask;
+      if (assignee) {
+        const creepMemory = getCreepMemory(assignee);
+        creepMemory.assignedTask = null;
       }
     });
+
+    unfinishedTasks.forEach(({ type, assignee, task }) => {
+      type.execute({
+        creep: assignee,
+        ...task.parameters,
+      } as any);
+    });
+  });
+
+  // Colony planning
+  if (Game.time % 10 === 0) {
+    values(colonies).forEach((colony) => {
+      const newTasks =
+        definedColonyStages[colony.currentStage].planNewTasks(colony);
+
+      colony.tasks.push(...newTasks);
+    });
   }
 
-  if (
-    !mySpawn.spawning &&
-    mySpawn.room.energyAvailable >= 300 &&
-    creeps.length < 5
-  ) {
-    spawnCreep(definedRoles.founder, mySpawn);
-  }
+  // Colony governance
 
-  const enemyCreeps = mySpawn.room.find(FIND_HOSTILE_CREEPS);
-  if (
-    !isEmpty(enemyCreeps) &&
-    values(unfinishedTasks).filter((task) => task.type === "attack-creeps")
-      .length < 2
-  ) {
-    const attackCreepsTask = createTask(
-      definedTasks["attack-creeps"],
-      {
-        controllerId: controller.id,
-      },
-      TaskPriority.ASAP,
-    );
+  if (Game.time % 50 === 0) {
+    const updatedColonies = values(colonies).map((colony) => {
+      const currentStageDefinition = definedColonyStages[colony.currentStage];
+      return currentStageDefinition.govern(colony);
+    });
 
-    unfinishedTasks[attackCreepsTask.id] = attackCreepsTask;
-  }
-
-  const bruteCreeps = creeps.filter((creep) => getRole(creep).name === "brute");
-  const attackCreepsTasks = values(unfinishedTasks).filter(
-    (task) => task.type === "attack-creeps",
-  );
-
-  if (
-    attackCreepsTasks.length > bruteCreeps.length &&
-    mySpawn.room.energyAvailable >= 130 &&
-    !mySpawn.spawning
-  ) {
-    spawnCreep(definedRoles.brute, mySpawn);
-  }
-
-  assignTasksToCreeps(unfinishedTasks, creeps);
-
-  saveTasks(unfinishedTasks);
-
-  endLoop({ colonies });
-
-  if (Game.time % 100 === 0) {
-    cleanMemory();
+    endLoop({ colonies: keyBy(updatedColonies, (colony) => colony.id) });
+  } else {
+    endLoop({ colonies });
   }
 }

@@ -1,3 +1,4 @@
+import { TypedId } from "../uitls";
 import { TaskDefinition } from "./defineTask";
 import { TaskType } from "./definitions";
 import { TaskPriority } from "./priority";
@@ -10,7 +11,7 @@ export type Task<
   type: Type;
   parameters: Parameters;
   priority: TaskPriority;
-  assignedCreep: Creep | null;
+  assigneeId: TypedId<Creep> | null;
 };
 
 export function createTask<
@@ -26,6 +27,6 @@ export function createTask<
     type: taskDefinition.name,
     parameters,
     priority,
-    assignedCreep: null,
+    assigneeId: null,
   };
 }

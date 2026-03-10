@@ -10,11 +10,21 @@ function getSource(id: TypedId<Source>): Source {
   }
 }
 
-function getMineral(id: TypedId<Mineral>): Mineral {
-  const result = Game.getObjectById(id as string as Id<Mineral>);
+function getRoom(id: TypedId<Room>): Room {
+  const result = Game.rooms[id as string];
 
   if (hasNoValue(result)) {
-    throw new Error(`Mineral not found: ${id}`);
+    throw new Error(`Room not found: ${id}`);
+  } else {
+    return result;
+  }
+}
+
+function getCreep(id: TypedId<Creep>): Creep | null {
+  const result = Game.creeps[id as string];
+
+  if (hasNoValue(result)) {
+    return null;
   } else {
     return result;
   }
@@ -22,5 +32,6 @@ function getMineral(id: TypedId<Mineral>): Mineral {
 
 export const Resolver = {
   getSource,
-  getMineral,
+  getCreep,
+  getRoom,
 };

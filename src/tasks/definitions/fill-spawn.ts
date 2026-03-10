@@ -1,11 +1,11 @@
 import { first } from "lodash-es";
 import { defineTask } from "../defineTask";
-import { hasNoValue } from "../../uitls";
+import { hasNoValue, TypedId } from "../../uitls";
 import { getEnergy } from "../../actions/getEnergy";
 
 export const fillSpawnTaskDefinition = defineTask<
   "fill-spawn",
-  { target: Id<StructureSpawn>; energyOrigin: Id<Source> }
+  { targetRoom: TypedId<Room> }
 >({
   name: "fill-spawn",
   execute: ({ target, energyOrigin, creep }) => {

@@ -1,0 +1,160 @@
+import { times } from "lodash-es";
+import { Resolver } from "../../resolver";
+import { createTask, Task } from "../../tasks/createTask";
+import { Colony } from "../colony";
+import { definedTasks } from "../../tasks/definitions";
+import { TaskPriority } from "../../tasks/priority";
+import { hasValue } from "../../uitls";
+import { RoleName } from "../../roles/definitions";
+import { developResource, syncResourceDevelopmentState } from "../../resources";
+
+type PopulationPlan = Array<{
+  role: RoleName;
+  count: number;
+  targetLevel: number;
+  priority: number;
+}>;
+
+type ColonyStage<Name extends string> = {
+  name: Name;
+  isComplete: (colony: Colony) => boolean;
+  planNewTasks: (colony: Colony) => Task[];
+  planTargetPopulation: (colony: Colony) => PopulationPlan;
+  govern: (colony: Colony) => Colony;
+};
+
+export const foundingStage: ColonyStage<"founding"> = {
+  name: "founding",
+  isComplete: (colony: Colony) => {
+    const sourceDevelopmentCompleted = colony.resources.every(
+      (managedResource) =>
+        managedResource.type === "developed" &&
+        managedResource.resource.type === "source",
+    );
+
+    const room = Resolver.getRoom(colony.room);
+    const controller = room.controller;
+
+    const controllerUpgradingCompleted =
+      hasValue(controller) && controller.level >= 2;
+
+    const extensionConstructionCompleted =
+      room.find(FIND_MY_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_EXTENSION,
+      }).length === 5;
+
+    return (
+      sourceDevelopmentCompleted &&
+      controllerUpgradingCompleted &&
+      extensionConstructionCompleted
+    );
+  },
+  planNewTasks: (colony: Colony) => {
+    const room = Resolver.getRoom(colony.room);
+
+    const newTasks: Task[] = [];
+
+    if (room.energyAvailable < room.energyCapacityAvailable) {
+      const fillSpawnTasks = colony.tasks.filter(
+        (task) => task.type === "fill-spawn",
+      );
+
+      const newFillTasks = times(3 - fillSpawnTasks.length, () =>
+        createTask(
+          definedTasks["fill-spawn"],
+          {
+            targetRoom: colony.room,
+          },
+          TaskPriority.HIGH,
+        ),
+      );
+
+      newTasks.push(...newFillTasks);
+    }
+
+    const roomController = room.controller;
+    if (hasValue(roomController) && roomController.level < 2) {
+      const upgradeControllerTasks = colony.tasks.filter(
+        (task) => task.type === "upgrade-controller",
+      );
+
+      const newUpgradeTasks = times(5 - upgradeControllerTasks.length, () =>
+        createTask(
+          definedTasks["upgrade-controller"],
+          {
+            target: roomController.id,
+            targetLevel: 2,
+          },
+          TaskPriority.MEDIUM,
+        ),
+      );
+
+      newTasks.push(...newUpgradeTasks);
+    }
+
+    if (
+      room.find(FIND_CONSTRUCTION_SITES).length > 0 &&
+      hasValue(roomController) &&
+      roomController.level >= 2
+    ) {
+      const buildTasks = colony.tasks.filter(
+        (task) => task.type === "build-structure",
+      );
+
+      const newBuildTasks = times(5 - buildTasks.length, () =>
+        createTask(
+          definedTasks["build-structure"],
+          {
+            room: colony.room,
+          },
+          TaskPriority.MEDIUM,
+        ),
+      );
+
+      newTasks.push(...newBuildTasks);
+    }
+
+    return newTasks;
+  },
+  planTargetPopulation: () => {
+    return [
+      {
+        role: "founder",
+        count: 8,
+        targetLevel: 3,
+        priority: 1,
+      },
+    ];
+  },
+  govern: (colony: Colony) => {
+    const syncedResources = colony.resources.map(syncResourceDevelopmentState);
+
+    const managedSourceResources = syncedResources.filter(
+      (managedResource) => managedResource.resource.type === "source",
+    );
+
+    const undevelopedResources = managedSourceResources.filter(
+      (resource) => resource.type === "undeveloped",
+    );
+
+    const developingResult = undevelopedResources.map((resource) =>
+      developResource(resource),
+    );
+
+    const updatedResources = [
+      ...syncedResources.filter(
+        (resource) => resource.resource.type !== "source",
+      ),
+      ...managedSourceResources.filter(
+        (resource) =>
+          resource.type === "developing" || resource.type === "developed",
+      ),
+      ...developingResult,
+    ];
+
+    return {
+      ...colony,
+      resources: updatedResources,
+    };
+  },
+};
