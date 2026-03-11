@@ -1,25 +1,17 @@
 import { times } from "lodash-es";
 import { Resolver } from "../../resolver";
 import { createTask, Task } from "../../tasks/createTask";
-import { Colony } from "../colony";
+import { Colony, SpawnIntent } from "../colony";
 import { definedTasks } from "../../tasks/definitions";
 import { TaskPriority } from "../../tasks/priority";
 import { hasValue } from "../../uitls";
-import { RoleName } from "../../roles/definitions";
 import { developResource, syncResourceDevelopmentState } from "../../resources";
-
-type PopulationPlan = Array<{
-  role: RoleName;
-  count: number;
-  targetLevel: number;
-  priority: number;
-}>;
 
 type ColonyStage<Name extends string> = {
   name: Name;
   isComplete: (colony: Colony) => boolean;
   planNewTasks: (colony: Colony) => Task[];
-  planTargetPopulation: (colony: Colony) => PopulationPlan;
+  planNewCreeps: (colony: Colony) => SpawnIntent[];
   govern: (colony: Colony) => Colony;
 };
 
@@ -116,15 +108,22 @@ export const foundingStage: ColonyStage<"founding"> = {
 
     return newTasks;
   },
-  planTargetPopulation: () => {
-    return [
-      {
-        role: "founder",
-        count: 8,
-        targetLevel: 3,
-        priority: 1,
-      },
-    ];
+  planNewCreeps: (colony: Colony) => {
+    const founders = colony.creeps.filter((creepRef) => {
+      const creep = Resolver.getCreep(creepRef);
+      return hasValue(creep) && creep.memory.role === "founder";
+    });
+
+    const founderIntents = colony.spawnIntents.filter(
+      (intent) => intent.role === "founder",
+    );
+
+    const totalFounders = founders.length + founderIntents.length;
+
+    return times(8 - totalFounders, () => ({
+      role: "founder",
+      targetLevel: 1,
+    }));
   },
   govern: (colony: Colony) => {
     const syncedResources = colony.resources.map(syncResourceDevelopmentState);

@@ -9,15 +9,9 @@ import {
   values,
 } from "lodash-es";
 import { cleanMemory, getCreepMemory, getTasks, saveTasks } from "./memory";
-import { Role } from "./roles/defineRole";
-import { definedRoles } from "./roles/definitions";
-import { createTask, Task } from "./tasks/createTask";
+import { definedRoles, RoleName } from "./roles/definitions";
 import { definedTasks } from "./tasks/definitions";
-import { hasNoValue, hasValue, TypedId } from "./uitls";
-import { getMaximalScaledBodyParts } from "./roles/bodyComposition";
-import { TaskPriority } from "./tasks/priority";
-import { ACCEPTABLE_HITS_LOSS } from "./constants";
-import { repairStructuresTaskDefinition } from "./tasks/definitions/repair-structures";
+import { getNewId, hasNoValue, hasValue, TypedId } from "./uitls";
 import {
   Colony,
   initializeColony,
@@ -26,6 +20,8 @@ import {
 } from "./colony/colony";
 import { Resolver } from "./resolver";
 import { definedColonyStages } from "./colony/stages";
+import { Task } from "./tasks/createTask";
+import { getScaledBodyParts } from "./roles/bodyComposition";
 
 const CURRENT_SCRIPT_VERSION = 1;
 
@@ -39,27 +35,9 @@ declare global {
     __meta?: ScriptMeta;
     colonies?: Record<TypedId<Colony>, Colony>;
   }
-}
-
-function spawnCreep(role: Role, spawn: StructureSpawn) {
-  const availableEnergy = spawn.room.energyAvailable;
-
-  const bodyPartsResult = getMaximalScaledBodyParts(
-    role.bodyComposition,
-    availableEnergy,
-  );
-
-  if (bodyPartsResult.isOk()) {
-    spawn.spawnCreep(
-      bodyPartsResult.value,
-      `${role.name}-${Game.time}-${Math.random().toString(36)}`,
-      {
-        memory: {
-          role: role.name,
-          assignedTask: null,
-        },
-      },
-    );
+  interface CreepMemory {
+    role: RoleName;
+    assignedTask: TypedId<Task> | null;
   }
 }
 
@@ -90,114 +68,6 @@ function endLoop(context: ReturnType<typeof startLoop>) {
   const { colonies } = context;
 
   values(colonies).forEach(storeColony);
-}
-
-function getUnfinishedTasks() {
-  const tasks = getTasks();
-
-  const unfinishedTasks = omitBy(tasks, (task) => {
-    const definition = definedTasks[task.type];
-
-    if (definition.isFinished?.(task.parameters as any)) {
-      console.log(
-        `[INFO][TASK:${task.type}]: Task finished and removed from memory`,
-      );
-      const assignedCreep = task.assignedCreep;
-
-      if (assignedCreep) {
-        const creepMemory = getCreepMemory(assignedCreep);
-        creepMemory.assignedTask = null;
-      }
-
-      return true;
-    } else {
-      return false;
-    }
-  });
-
-  return unfinishedTasks;
-}
-
-function assignTaskToCreep(
-  tasks: { [taskId: string]: Task },
-  task: Task,
-  creep: Creep,
-) {
-  const creepMemory = getCreepMemory(creep);
-  const priorAssignedTaskId = creepMemory.assignedTask;
-  const priorAssignedTask = tasks[priorAssignedTaskId ?? ""] ?? null;
-
-  if (priorAssignedTask?.id === task.id) {
-    return;
-  }
-
-  if (priorAssignedTask) {
-    priorAssignedTask.assignedCreep = null;
-  }
-
-  creepMemory.assignedTask = task.id;
-
-  if (task.assignedCreep && task.assignedCreep.name !== creep.name) {
-    const priorAssignee = task.assignedCreep;
-    const priorAssigneeMemory = getCreepMemory(priorAssignee);
-
-    priorAssigneeMemory.assignedTask = null;
-  }
-
-  task.assignedCreep = creep;
-}
-
-function getRole(creep: Creep): Role {
-  const roleName = getCreepMemory(creep).role;
-
-  return definedRoles[roleName];
-}
-
-function assignTasksToCreeps(
-  tasks: { [taskId: string]: Task },
-  creeps: Creep[],
-) {
-  const unassignedTasksSortedByPriority = values(tasks)
-    .filter((task) => !task.assignedCreep)
-    .sort((a, b) => b.priority - a.priority);
-  const creepsSortedByAssignedTask = creeps.sort((a, b) => {
-    const aTaskId = getCreepMemory(a).assignedTask;
-    const aTask = tasks[aTaskId ?? ""] ?? null;
-
-    const bTaskId = getCreepMemory(b).assignedTask;
-    const bTask = tasks[bTaskId ?? ""] ?? null;
-
-    const aPriority = aTask ? aTask.priority : -1;
-    const bPriority = bTask ? bTask.priority : -1;
-
-    return aPriority - bPriority;
-  });
-
-  creepsSortedByAssignedTask.forEach((creep) => {
-    const assignableTasks = unassignedTasksSortedByPriority.filter((task) => {
-      const creepRole = getRole(creep);
-
-      return includes(creepRole.assignableTaskTypes, task.type);
-    });
-    const nextPriorityTask = first(assignableTasks);
-
-    if (hasNoValue(nextPriorityTask)) {
-      return;
-    }
-
-    const creepMemory = getCreepMemory(creep);
-    if (hasNoValue(creepMemory.assignedTask)) {
-      assignTaskToCreep(tasks, nextPriorityTask, creep);
-      unassignedTasksSortedByPriority.pop();
-    } else {
-      const assignedTask = tasks[creepMemory.assignedTask];
-
-      if (assignedTask && assignedTask.priority < nextPriorityTask.priority) {
-        assignTaskToCreep(tasks, nextPriorityTask, creep);
-        unassignedTasksSortedByPriority.pop();
-      }
-    }
-  });
 }
 
 export function loop() {
@@ -253,13 +123,80 @@ export function loop() {
     });
   });
 
-  // Colony planning
+  // 2.1 Cleaning up memory of non-existing creeps
+
+  // 2.2 Execute colony planning
   if (Game.time % 10 === 0) {
+    // Enriching the colony with its planning results
     values(colonies).forEach((colony) => {
       const newTasks =
         definedColonyStages[colony.currentStage].planNewTasks(colony);
 
       colony.tasks.push(...newTasks);
+    });
+
+    values(colonies).forEach((colony) => {
+      const newSpawnIntents =
+        definedColonyStages[colony.currentStage].planNewCreeps(colony);
+
+      colony.spawnIntents.push(...newSpawnIntents);
+    });
+
+    // 2.3 Act on the planning results
+
+    // Spawn creeps for spawn intents
+    values(colonies).forEach((colony) => {
+      const room = Resolver.getRoom(colony.room);
+      const roomSpawner = room.find(FIND_MY_SPAWNS)[0];
+      const spawnIntentToExecute = first(colony.spawnIntents);
+
+      if (
+        hasValue(spawnIntentToExecute) &&
+        hasValue(roomSpawner) &&
+        roomSpawner.spawning === null
+      ) {
+        const newCreepId = getNewId<Creep>(
+          definedRoles[spawnIntentToExecute.role].name,
+        );
+        const scaledBodyParts = getScaledBodyParts(
+          definedRoles[spawnIntentToExecute.role].bodyComposition,
+          spawnIntentToExecute.targetLevel,
+        );
+
+        const spawnResult = roomSpawner.spawnCreep(
+          scaledBodyParts,
+          newCreepId,
+          {},
+        );
+
+        if (spawnResult === OK) {
+          colony.spawnIntents.pop();
+          colony.creeps.push(newCreepId);
+        }
+      }
+    });
+
+    // Assign creeps to tasks
+    // 1. Assign unassigned tasks to idle creeps
+    // 2. Resign tasks based on: holds least important task and more important task is available (This must be a stable assignment)
+    values(colonies).forEach((colony) => {
+      const creeps = colony.creeps.map(Resolver.getCreep).filter(hasValue);
+      const idleCreeps = creeps.filter(
+        (creep) => creep.memory.assignedTask === null,
+      );
+
+      const unassignedTasks = colony.tasks
+        .filter((task) => hasNoValue(task.assigneeId))
+        .sort((a, b) => b.priority - a.priority);
+
+      idleCreeps.forEach((creep) => {
+        const taskToAssign = unassignedTasks.pop();
+
+        if (hasValue(taskToAssign)) {
+          creep.memory.assignedTask = taskToAssign.id;
+          taskToAssign.assigneeId = creep.id;
+        }
+      });
     });
   }
 

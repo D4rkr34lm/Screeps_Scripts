@@ -1,8 +1,7 @@
 import { flatten, times } from "lodash-es";
-import { BodyPart, getBodyCost } from "./bodyParts";
-import { err, ok, Result } from "neverthrow";
+import { BodyPart } from "./bodyParts";
 
-const MAX_BODY_PARTS = 50;
+// const MAX_BODY_PARTS = 50;
 
 export interface BodyComposition {
   baseParts: BodyPart[];
@@ -10,21 +9,18 @@ export interface BodyComposition {
   sortParts?: (parts: BodyPart[]) => BodyPart[];
 }
 
-function getScaledBodyParts(
+export function getScaledBodyParts(
   composition: BodyComposition,
   factor: number,
-): Result<BodyPart[], "factor-too-low"> {
-  if (factor < 1) {
-    return err("factor-too-low");
-  }
-
-  return ok([
+): BodyPart[] {
+  return [
     ...composition.baseParts,
     ...flatten(times(factor - 1, () => composition.extraParts)),
-  ]);
+  ];
 }
 
-function getMaximalCompositionFactor(
+/*
+export function getMaximalCompositionFactor(
   composition: BodyComposition,
   energyAvailable: number,
 ): number {
@@ -64,3 +60,4 @@ export function getMaximalScaledBodyParts(
     return err("minimum-energy-not-met");
   }
 }
+*/

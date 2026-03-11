@@ -1,7 +1,13 @@
 import { ManagedResource, initializeResource } from "../resources";
+import { RoleName } from "../roles/definitions";
 import { Task } from "../tasks/createTask";
 import { getNewId, TypedId } from "../uitls";
 import { ColonyStageName } from "./stages";
+
+export type SpawnIntent = {
+  role: RoleName;
+  targetLevel: number;
+};
 
 export interface Colony {
   id: TypedId<this>;
@@ -9,6 +15,8 @@ export interface Colony {
   room: TypedId<Room>;
   resources: ManagedResource[];
   tasks: Task[];
+  spawnIntents: SpawnIntent[];
+  creeps: Array<TypedId<Creep>>;
 }
 
 export function storeColony(colony: Colony) {
@@ -36,6 +44,8 @@ export function initializeColony(room: Room): Colony {
     room: room.name as TypedId<Room>,
     resources: managedResources,
     tasks: [],
+    spawnIntents: [],
+    creeps: [],
   };
 
   return newColony;
