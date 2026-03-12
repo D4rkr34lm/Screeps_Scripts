@@ -2,6 +2,7 @@ import { isEmpty } from "lodash-es";
 import { hasNoValue, TypedId } from "../../uitls";
 import { defineTask } from "../defineTask";
 import { getEnergy } from "../../actions/getEnergy";
+import { Resolver } from "../../resolver";
 
 export const buildStructureTaskDefinition = defineTask<
   "build-structure",
@@ -32,8 +33,9 @@ export const buildStructureTaskDefinition = defineTask<
       }
     }
   },
-  isFinished: ({ roomController }) => {
-    const controller = Game.getObjectById(roomController);
+  isFinished: ({ room }) => {
+    const roomObject = Resolver.getRoom(room);
+    const controller = roomObject.controller;
 
     if (hasNoValue(controller)) {
       console.log("[ERR][TASK:build-structure]: Invalid room controller");

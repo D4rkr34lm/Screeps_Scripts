@@ -2,27 +2,22 @@ import { first } from "lodash-es";
 import { defineTask } from "../defineTask";
 import { hasNoValue, TypedId } from "../../uitls";
 import { getEnergy } from "../../actions/getEnergy";
+import { Resolver } from "../../resolver";
 
 export const fillSpawnTaskDefinition = defineTask<
   "fill-spawn",
   { targetRoom: TypedId<Room> }
 >({
   name: "fill-spawn",
-  execute: ({ target, energyOrigin, creep }) => {
-    const spawn = Game.getObjectById(target);
-    const source = Game.getObjectById(energyOrigin);
+  execute: ({ targetRoom, creep }) => {
+    const room = Resolver.getRoom(targetRoom);
 
-    if (!spawn || !source) {
-      console.log("[ERR][TASK:fill-spawn]: Invalid target or energy origin");
-      return;
-    }
-
-    const room = spawn.room;
+    const spawns = room.find(FIND_MY_SPAWNS);
     const extensions = room
       .find(FIND_MY_STRUCTURES)
       .filter((structure) => structure.structureType === STRUCTURE_EXTENSION);
 
-    const targets = [spawn, ...extensions].filter(
+    const targets = [...spawns, ...extensions].filter(
       (structure) => structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
     );
 
@@ -50,15 +45,8 @@ export const fillSpawnTaskDefinition = defineTask<
       }
     }
   },
-  isFinished: ({ target }) => {
-    const spawn = Game.getObjectById(target);
-
-    if (!spawn) {
-      console.log("[ERR][TASK:fill-spawn]: Invalid target");
-      return true;
-    }
-
-    const room = spawn.room;
+  isFinished: ({ targetRoom }) => {
+    const room = Resolver.getRoom(targetRoom);
 
     return room.energyCapacityAvailable === room.energyAvailable;
   },
