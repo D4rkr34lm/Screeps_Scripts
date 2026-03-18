@@ -65,20 +65,22 @@ export const foundingStage: ColonyStage<"founding"> = {
     }
 
     const roomController = room.controller;
-    if (hasValue(roomController) && roomController.level < 2) {
+    if (hasValue(roomController)) {
       const upgradeControllerTasks = colony.tasks.filter(
         (task) => task.type === "upgrade-controller",
       );
 
-      const newUpgradeTasks = times(5 - upgradeControllerTasks.length, () =>
-        createTask(
-          definedTasks["upgrade-controller"],
-          {
-            target: roomController.id,
-            targetLevel: 2,
-          },
-          TaskPriority.MEDIUM,
-        ),
+      const newUpgradeTasks = times(
+        (roomController.level < 2 ? 5 : 1) - upgradeControllerTasks.length,
+        () =>
+          createTask(
+            definedTasks["upgrade-controller"],
+            {
+              target: roomController.id,
+              targetLevel: 2,
+            },
+            TaskPriority.MEDIUM,
+          ),
       );
 
       newTasks.push(...newUpgradeTasks);
