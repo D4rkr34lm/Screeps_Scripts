@@ -1,19 +1,11 @@
 import { times } from "lodash-es";
 import { Resolver } from "../../resolver";
 import { createTask, Task } from "../../tasks/createTask";
-import { Colony, SpawnIntent } from "../colony";
+import { Colony } from "../colony";
 import { definedTasks } from "../../tasks/definitions";
 import { TaskPriority } from "../../tasks/priority";
 import { hasValue } from "../../uitls";
-import { developResource, syncResourceDevelopmentState } from "../../resources";
-
-type ColonyStage<Name extends string> = {
-  name: Name;
-  isComplete: (colony: Colony) => boolean;
-  planNewTasks: (colony: Colony) => Task[];
-  planNewCreeps: (colony: Colony) => SpawnIntent[];
-  govern: (colony: Colony) => Colony;
-};
+import { ColonyStage } from "../colonyStage";
 
 export const foundingStage: ColonyStage<"founding"> = {
   name: "founding",
@@ -126,36 +118,5 @@ export const foundingStage: ColonyStage<"founding"> = {
       role: "founder",
       targetLevel: 1,
     }));
-  },
-  govern: (colony: Colony) => {
-    const syncedResources = colony.resources.map(syncResourceDevelopmentState);
-
-    const managedSourceResources = syncedResources.filter(
-      (managedResource) => managedResource.resource.type === "source",
-    );
-
-    const undevelopedResources = managedSourceResources.filter(
-      (resource) => resource.type === "undeveloped",
-    );
-
-    const developingResult = undevelopedResources.map((resource) =>
-      developResource(resource),
-    );
-
-    const updatedResources = [
-      ...syncedResources.filter(
-        (resource) => resource.resource.type !== "source",
-      ),
-      ...managedSourceResources.filter(
-        (resource) =>
-          resource.type === "developing" || resource.type === "developed",
-      ),
-      ...developingResult,
-    ];
-
-    return {
-      ...colony,
-      resources: updatedResources,
-    };
   },
 };

@@ -212,14 +212,6 @@ export function loop() {
     idleCreeps.forEach((creep) => {
       const taskToAssign = unassignedTasks.pop();
 
-      console.log(
-        "DEV",
-        creep.name,
-        "is idle",
-        "assigning task",
-        taskToAssign?.id,
-      );
-
       if (hasValue(taskToAssign)) {
         creep.memory.assignedTask = taskToAssign.id as TypedId<Task>;
         taskToAssign.assigneeId = creep.name as TypedId<Creep>;
@@ -227,11 +219,5 @@ export function loop() {
     });
   });
 
-  // Colony governance
-  const updatedColonies = values(colonies).map((colony) => {
-    const currentStageDefinition = definedColonyStages[colony.currentStage];
-    return currentStageDefinition.govern(colony);
-  });
-
-  endLoop({ colonies: keyBy(updatedColonies, (colony) => colony.id) });
+  endLoop({ colonies });
 }
