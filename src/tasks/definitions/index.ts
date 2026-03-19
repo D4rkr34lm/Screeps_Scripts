@@ -1,7 +1,7 @@
 import { attackCreepsTaskDefinition } from "./attackCreeps";
 import { buildStructureTaskDefinition } from "./build-structure";
 import { fillSpawnTaskDefinition } from "./fill-spawn";
-import { harvestSourceTaskDefinition } from "./harvest-source";
+import { harvestResourceTaskDefinition } from "./harvest-resource";
 import { repairStructuresTaskDefinition } from "./repair-structures";
 import { upgradeControllerTaskDefinition } from "./upgrade-controller";
 
@@ -10,7 +10,7 @@ export const definedTasks = {
   "upgrade-controller": upgradeControllerTaskDefinition,
   "build-structure": buildStructureTaskDefinition,
   "repair-structures": repairStructuresTaskDefinition,
-  "harvest-source": harvestSourceTaskDefinition,
+  "harvest-resource": harvestResourceTaskDefinition,
   "attack-creeps": attackCreepsTaskDefinition,
 };
 

@@ -1,10 +1,10 @@
 import { bruteRole } from "./brute";
 import { founderRole } from "./founder";
-import { staticMinerRoleDefinition } from "./staticMiner";
+import { heavyWorkerRole } from "./heavyWorker";
 
 export const definedRoles = {
   founder: founderRole,
-  ["static-miner"]: staticMinerRoleDefinition,
+  ["heavy-worker"]: heavyWorkerRole,
   brute: bruteRole,
 };
 

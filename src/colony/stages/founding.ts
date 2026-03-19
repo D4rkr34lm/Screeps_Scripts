@@ -11,9 +11,10 @@ export const foundingStage: ColonyStage<"founding"> = {
   name: "founding",
   isComplete: (colony: Colony) => {
     const sourceDevelopmentCompleted = colony.resources.every(
-      (managedResource) =>
-        managedResource.type === "developed" &&
-        managedResource.resource.type === "source",
+      (resource) =>
+        resource.type === "source" &&
+        resource.kind === "local" &&
+        resource.state === "containerized",
     );
 
     const room = Resolver.getRoom(colony.room);

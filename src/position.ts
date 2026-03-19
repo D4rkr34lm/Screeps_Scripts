@@ -1,3 +1,23 @@
+export interface SerializedPosition {
+  x: number;
+  y: number;
+  roomName: string;
+}
+
+export function serializePosition(position: RoomPosition): SerializedPosition {
+  return {
+    x: position.x,
+    y: position.y,
+    roomName: position.roomName,
+  };
+}
+
+export function deserializePosition(
+  serialized: SerializedPosition,
+): RoomPosition {
+  return new RoomPosition(serialized.x, serialized.y, serialized.roomName);
+}
+
 export function getPositionsInRange(
   position: RoomPosition,
   range: number,

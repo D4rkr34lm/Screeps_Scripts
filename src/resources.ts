@@ -1,177 +1,161 @@
 import { flatMap } from "lodash-es";
 import { getPositionsInRange } from "./position";
-import { Resolver } from "./resolver";
-import { hasNoValue, hasValue, TypedId } from "./uitls";
+import { hasNoValue, hasValue } from "./uitls";
 
-interface Position {
-  roomId: TypedId<Room>;
-  x: number;
-  y: number;
-}
-
-interface SourceResource {
+interface ClaimedLocalSource {
   type: "source";
-  id: TypedId<Source>;
+  kind: "local";
+  sourceId: Id<Source>;
 }
 
-export type MinableResource = SourceResource;
-
-interface UndevelopedResource {
-  type: "undeveloped";
-  resource: MinableResource;
+interface ContainerizedSource extends ClaimedLocalSource {
+  state: "containerized";
+  containerId: Id<StructureContainer>;
 }
 
-interface DevelopingResource {
-  type: "developing";
-  resource: MinableResource;
-  outputPosition: Position;
+interface LinkedSource extends ClaimedLocalSource {
+  state: "linked";
+  linkId: Id<StructureLink>;
 }
 
-interface DevelopedResource {
-  type: "developed";
-  resource: MinableResource;
-  outputContainer: TypedId<StructureContainer>;
+interface DevelopingSource extends ClaimedLocalSource {
+  state: "developing";
 }
 
-export type ManagedResource =
-  | UndevelopedResource
-  | DevelopingResource
-  | DevelopedResource;
+interface UndevelopedSource extends ClaimedLocalSource {
+  state: "undeveloped";
+}
 
-function getOptimalOutputPosition(resource: MinableResource): RoomPosition {
-  const target = Resolver.getSource(resource.id);
+type StateFullClaimedLocalSource =
+  | ContainerizedSource
+  | LinkedSource
+  | DevelopingSource
+  | UndevelopedSource;
+
+export type ClaimedResource = StateFullClaimedLocalSource;
+
+export function syncLocalSource(
+  resource: Id<Source>,
+): StateFullClaimedLocalSource {
+  const target = Game.getObjectById(resource);
+
+  if (hasNoValue(target)) {
+    throw new Error(`Could not find resource with id ${resource}`);
+  }
 
   const targetPosition = target.pos;
 
-  const surroundingPositions = getPositionsInRange(targetPosition, 1);
+  const surroundingPositions = getPositionsInRange(targetPosition, 2);
 
-  const constructionSitePosition = surroundingPositions.find((pos) => {
-    const terrain = pos.lookFor(LOOK_TERRAIN)[0];
-    const structures = pos.lookFor(LOOK_STRUCTURES);
-
-    return terrain !== "wall" && structures.length === 0;
-  });
-
-  if (hasNoValue(constructionSitePosition)) {
-    throw new Error(
-      `No valid construction site position found for resource ${resource.id} of type ${resource.type}`,
-    );
-  }
-
-  return constructionSitePosition;
-}
-
-export function developResource(
-  resource: UndevelopedResource,
-): DevelopingResource {
-  const constructionSitePosition = getOptimalOutputPosition(resource.resource);
-
-  const constructionSiteResult =
-    constructionSitePosition.createConstructionSite(STRUCTURE_CONTAINER);
-
-  if (constructionSiteResult !== OK) {
-    throw new Error(
-      `Failed to create construction site for resource ${resource.resource.id}: ${constructionSiteResult}`,
-    );
-  }
-
-  return {
-    type: "developing",
-    resource: resource.resource,
-    outputPosition: {
-      x: constructionSitePosition.x,
-      y: constructionSitePosition.y,
-      roomId: constructionSitePosition.roomName as TypedId<Room>,
-    },
-  };
-}
-
-export function syncResourceDevelopmentState(
-  resource: ManagedResource,
-): ManagedResource {
-  if (resource.type === "developing") {
-    const targetPosition = new RoomPosition(
-      resource.outputPosition.x,
-      resource.outputPosition.y,
-      resource.outputPosition.roomId,
-    );
-
-    const constructionSide = targetPosition
-      .lookFor(LOOK_CONSTRUCTION_SITES)
-      .find((structure) => structure.structureType === STRUCTURE_CONTAINER);
-
-    const container = targetPosition
-      .lookFor(LOOK_STRUCTURES)
-      .find((structure) => structure.structureType === STRUCTURE_CONTAINER);
-
-    if (hasValue(container)) {
-      return {
-        type: "developed",
-        resource: resource.resource,
-        outputContainer: container.id as string as TypedId<StructureContainer>,
-      };
-    } else if (hasNoValue(constructionSide)) {
-      return developResource({
-        type: "undeveloped",
-        resource: resource.resource,
-      });
-    } else {
-      return resource;
-    }
-  } else if (resource.type === "developed") {
-    const container = Game.getObjectById(
-      resource.outputContainer as string as Id<StructureContainer>,
-    );
-
-    if (hasNoValue(container)) {
-      return developResource({
-        type: "undeveloped",
-        resource: resource.resource,
-      });
-    } else {
-      return resource;
-    }
-  } else {
-    return resource;
-  }
-}
-
-export function initializeResource(resource: MinableResource): ManagedResource {
-  const target = Resolver.getSource(resource.id);
-
-  const targetPosition = target.pos;
-
-  const surroundingPositions = getPositionsInRange(targetPosition, 1);
-
-  const existingContainer = flatMap(surroundingPositions, (pos) =>
+  const existingOutput = flatMap(surroundingPositions, (pos) =>
     pos.lookFor(LOOK_STRUCTURES),
-  ).find((structure) => structure.structureType === STRUCTURE_CONTAINER);
+  ).find(
+    (structure) =>
+      structure.structureType === STRUCTURE_CONTAINER ||
+      structure.structureType === STRUCTURE_LINK,
+  );
 
   const existingConstructionSite = flatMap(surroundingPositions, (pos) =>
     pos.lookFor(LOOK_CONSTRUCTION_SITES),
-  ).find((structure) => structure.structureType === STRUCTURE_CONTAINER);
+  ).find(
+    (structure) =>
+      structure.structureType === STRUCTURE_CONTAINER ||
+      structure.structureType === STRUCTURE_LINK,
+  );
 
-  if (hasValue(existingContainer)) {
+  if (
+    hasValue(existingOutput) &&
+    existingOutput.structureType === STRUCTURE_CONTAINER
+  ) {
     return {
-      type: "developed",
-      resource,
-      outputContainer:
-        existingContainer.id as string as TypedId<StructureContainer>,
+      type: "source",
+      kind: "local",
+      sourceId: resource,
+      state: "containerized",
+      containerId: existingOutput.id as Id<StructureContainer>,
+    };
+  } else if (
+    hasValue(existingOutput) &&
+    existingOutput.structureType === STRUCTURE_LINK
+  ) {
+    return {
+      type: "source",
+      kind: "local",
+      sourceId: resource,
+      state: "linked",
+      linkId: existingOutput.id as Id<StructureLink>,
     };
   } else if (hasValue(existingConstructionSite)) {
     return {
-      type: "developing",
-      resource,
-      outputPosition: {
-        x: existingConstructionSite.pos.x,
-        y: existingConstructionSite.pos.y,
-        roomId: existingConstructionSite.pos.roomName as TypedId<Room>,
-      },
+      type: "source",
+      kind: "local",
+      sourceId: resource,
+      state: "developing",
     };
   } else {
     return {
-      type: "undeveloped",
-      resource,
+      type: "source",
+      kind: "local",
+      sourceId: resource,
+      state: "undeveloped",
     };
+  }
+}
+
+export function getHarvestPositionForResource(
+  resource: ClaimedResource,
+): RoomPosition {
+  const target = Game.getObjectById(resource.sourceId);
+
+  if (hasNoValue(target)) {
+    throw new Error(`Could not find resource with id ${resource.sourceId}`);
+  }
+
+  if (resource.state === "containerized" || resource.state === "linked") {
+    const outputStructure = Game.getObjectById(
+      resource.state === "containerized"
+        ? resource.containerId
+        : resource.linkId,
+    );
+
+    if (hasNoValue(outputStructure)) {
+      throw new Error(
+        `Could not find output structure for resource with id ${resource.sourceId}`,
+      );
+    }
+
+    const potentialPositionForHarvesting = getPositionsInRange(target.pos, 1);
+    const potentialPositionForOutput = getPositionsInRange(
+      outputStructure.pos,
+      1,
+    );
+
+    const harvestingPosition = potentialPositionForHarvesting.find((position) =>
+      potentialPositionForOutput.some((outputPosition) =>
+        outputPosition.isEqualTo(position),
+      ),
+    );
+
+    if (hasNoValue(harvestingPosition)) {
+      throw new Error(
+        `Could not find harvesting position for resource with id ${resource.sourceId}`,
+      );
+    }
+
+    return harvestingPosition;
+  } else {
+    const potentialPositionsForHarvesting = getPositionsInRange(target.pos, 1);
+
+    const harvestingPosition = potentialPositionsForHarvesting.find(
+      (position) => position.lookFor(LOOK_TERRAIN)[0] !== "wall",
+    );
+
+    if (hasNoValue(harvestingPosition)) {
+      throw new Error(
+        `Could not find harvesting position for resource with id ${resource.sourceId}`,
+      );
+    }
+
+    return harvestingPosition;
   }
 }
