@@ -64,13 +64,14 @@ export const foundingStage: ColonyStage<"founding"> = {
       );
 
       const newUpgradeTasks = times(
-        (roomController.level < 2 ? 5 : 1) - upgradeControllerTasks.length,
+        (roomController.level < 2 ? 2 : 1) - upgradeControllerTasks.length,
         () =>
           createTask(
             definedTasks["upgrade-controller"],
             {
               target: roomController.id,
-              targetLevel: 2,
+              targetLevel:
+                roomController.level < 2 ? 2 : roomController.level + 1,
             },
             TaskPriority.MEDIUM,
           ),
@@ -116,7 +117,7 @@ export const foundingStage: ColonyStage<"founding"> = {
     const totalFounders = founders.length + founderIntents.length;
 
     return times(8 - totalFounders, () => ({
-      role: "founder",
+      role: "founder" as const,
       targetLevel: 1,
     }));
   },

@@ -10,9 +10,10 @@ import {
   storeColony,
 } from "./colony/colony";
 import { Resolver } from "./resolver";
-import { definedColonyStages } from "./colony/stages";
+import { definedColonyStages, getNextColonyStage } from "./colony/stages";
 import { Task } from "./tasks/createTask";
 import { getScaledBodyParts } from "./roles/bodyComposition";
+import { syncLocalSource } from "./resources";
 
 const CURRENT_SCRIPT_VERSION = 1;
 
@@ -116,7 +117,24 @@ export function loop() {
     colony.tasks = unfinishedTasks.map(({ task }) => task);
   });
 
-  // 2.1 Cleaning up memory of non-existing creeps
+  // 2.0 Check if colony can be advanced to the next stage (This will be based on the current stage's completion criteria)
+  values(colonies).forEach((colony) => {
+    const currentStageDefinition = definedColonyStages[colony.currentStage];
+
+    if (currentStageDefinition.isComplete(colony)) {
+      console.log(
+        `[INFO][COLONY:${colony.id}]: Advancing from stage ${colony.currentStage} to the next stage`,
+      );
+
+      const nextStageName = getNextColonyStage(colony.currentStage);
+
+      if (hasValue(nextStageName)) {
+        colony.currentStage = nextStageName;
+      }
+    }
+  });
+
+  // 2.1.1 Cleaning up memory of non-existing creeps
   values(colonies).forEach((colony) => {
     const [existingCreeps, nonExistingCreeps] = partition(
       colony.creeps,
@@ -139,10 +157,21 @@ export function loop() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete Game.creeps[creepId];
+      delete Memory.creeps[creepId];
     });
 
     colony.creeps = existingCreeps;
+  });
+
+  // 2.1.2 Sync colony state with the game state (e.g. resource states, construction sites, etc.)
+  values(colonies).forEach((colony) => {
+    const room = Resolver.getRoom(colony.room);
+
+    const sources = room.find(FIND_SOURCES);
+
+    const syncedResources = sources.map((source) => syncLocalSource(source.id));
+
+    colony.resources = syncedResources;
   });
 
   // 2.2 Enriching the colony with its planning results
@@ -206,7 +235,7 @@ export function loop() {
 
     const unassignedTasks = colony.tasks
       .filter((task) => hasNoValue(task.assigneeId))
-      .sort((a, b) => b.priority - a.priority)
+      .sort((a, b) => a.priority - b.priority)
       .reverse();
 
     idleCreeps.forEach((creep) => {
