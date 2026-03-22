@@ -1,8 +1,8 @@
-import { first, keyBy, partition, values } from "lodash-es";
+import { first, includes, keyBy, partition, values } from "lodash-es";
 import { getCreepMemory } from "./memory";
 import { definedRoles, RoleName } from "./roles/definitions";
 import { definedTasks } from "./tasks/definitions";
-import { getNewId, hasNoValue, hasValue, TypedId } from "./uitls";
+import { getNewId, hasNoValue, hasValue, shiftFromIf, TypedId } from "./uitls";
 import {
   Colony,
   initializeColony,
@@ -239,7 +239,11 @@ export function loop() {
       .reverse();
 
     idleCreeps.forEach((creep) => {
-      const taskToAssign = unassignedTasks.pop();
+      const taskToAssign = shiftFromIf(unassignedTasks, (task) => {
+        const creepRole = definedRoles[creep.memory.role];
+
+        return includes(creepRole.assignableTaskTypes, task.type);
+      });
 
       if (hasValue(taskToAssign)) {
         creep.memory.assignedTask = taskToAssign.id as TypedId<Task>;

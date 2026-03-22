@@ -15,3 +15,12 @@ export type TypedId<T> = string & { __type: T };
 export function getNewId<T>(prefix?: string): TypedId<T> {
   return `${prefix}-${uid()}` as TypedId<T>;
 }
+
+export function shiftFromIf<T>(
+  array: T[],
+  predicate: (item: T) => boolean,
+): T | null {
+  const index = array.findIndex(predicate);
+
+  return array.splice(index, 1)[0] ?? null;
+}
