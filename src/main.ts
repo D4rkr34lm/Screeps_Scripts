@@ -235,8 +235,7 @@ export function loop() {
 
     const unassignedTasks = colony.tasks
       .filter((task) => hasNoValue(task.assigneeId))
-      .sort((a, b) => a.priority - b.priority)
-      .reverse();
+      .sort((a, b) => a.priority - b.priority);
 
     idleCreeps.forEach((creep) => {
       const taskToAssign = shiftFromIf(unassignedTasks, (task) => {

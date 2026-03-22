@@ -37,7 +37,7 @@ export function initializeColony(room: Room): Colony {
     .map(syncLocalSource);
 
   const newColony: Colony = {
-    id: getNewId<Colony>(),
+    id: getNewId<Colony>(`colony-${room.name}`),
     currentStage: "founding",
     room: room.name as TypedId<Room>,
     resources: [...claimedSources],

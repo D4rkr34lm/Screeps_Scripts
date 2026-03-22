@@ -12,7 +12,7 @@ export function hasNoValue<T>(
 
 export type TypedId<T> = string & { __type: T };
 
-export function getNewId<T>(prefix?: string): TypedId<T> {
+export function getNewId<T>(prefix: string): TypedId<T> {
   return `${prefix}-${uid()}` as TypedId<T>;
 }
 

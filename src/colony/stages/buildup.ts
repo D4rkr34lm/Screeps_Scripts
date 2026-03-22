@@ -40,14 +40,14 @@ export const buildupStage: ColonyStage<"buildup"> = {
         (task) => task.type === "upgrade-controller",
       );
 
-      const newUpgradeTasks = times(2 - upgradeControllerTasks.length, () =>
+      const newUpgradeTasks = times(4 - upgradeControllerTasks.length, () =>
         createTask(
           definedTasks["upgrade-controller"],
           {
             target: roomController.id,
-            targetLevel: 2,
+            targetLevel: 6,
           },
-          TaskPriority.MEDIUM,
+          TaskPriority.LOW,
         ),
       );
 
@@ -59,7 +59,7 @@ export const buildupStage: ColonyStage<"buildup"> = {
         (task) => task.type === "build-structure",
       );
 
-      const newBuildTasks = times(2 - buildTasks.length, () =>
+      const newBuildTasks = times(4 - buildTasks.length, () =>
         createTask(
           definedTasks["build-structure"],
           {
@@ -105,13 +105,13 @@ export const buildupStage: ColonyStage<"buildup"> = {
     return newTasks;
   },
   planNewCreeps: (colony: Colony) => {
-    const founders = colony.creeps.filter((creepRef) => {
+    const workers = colony.creeps.filter((creepRef) => {
       const creep = Resolver.getCreep(creepRef);
-      return hasValue(creep) && creep.memory.role === "founder";
+      return hasValue(creep) && creep.memory.role === "worker";
     });
 
-    const founderIntents = colony.spawnIntents.filter(
-      (intent) => intent.role === "founder",
+    const workerIntents = colony.spawnIntents.filter(
+      (intent) => intent.role === "worker",
     );
 
     const heavyWorkers = colony.creeps.filter((creepRef) => {
@@ -123,7 +123,7 @@ export const buildupStage: ColonyStage<"buildup"> = {
       (intent) => intent.role === "heavy-worker",
     );
 
-    const totalFounders = founders.length + founderIntents.length;
+    const totalWorkers = workers.length + workerIntents.length;
     const totalHeavyWorkers = heavyWorkers.length + heavyWorkerIntents.length;
 
     const requiredHeavyWorkers = colony.resources.filter(
@@ -131,8 +131,8 @@ export const buildupStage: ColonyStage<"buildup"> = {
     ).length;
 
     return [
-      ...times(8 - totalFounders, () => ({
-        role: "founder" as const,
+      ...times(8 - totalWorkers, () => ({
+        role: "worker" as const,
         targetLevel: 1,
       })),
       ...times(requiredHeavyWorkers - totalHeavyWorkers, () => ({

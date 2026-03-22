@@ -1,5 +1,5 @@
 import { bruteRole } from "./brute";
-import { workerRole } from "./founder";
+import { workerRole } from "./worker";
 import { heavyWorkerRole } from "./heavyWorker";
 
 export const definedRoles = {
