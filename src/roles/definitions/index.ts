@@ -1,9 +1,9 @@
 import { bruteRole } from "./brute";
-import { founderRole } from "./founder";
+import { workerRole } from "./founder";
 import { heavyWorkerRole } from "./heavyWorker";
 
 export const definedRoles = {
-  founder: founderRole,
+  worker: workerRole,
   ["heavy-worker"]: heavyWorkerRole,
   brute: bruteRole,
 };

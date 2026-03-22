@@ -22,14 +22,17 @@ export const harvestResourceTaskDefinition = defineTask<
       return;
     }
 
-    const harvestingResult = creep.harvest(resource);
+    const targetPosition = deserializePosition(harvestingPosition);
 
-    if (harvestingResult === OK) {
+    if (!creep.pos.isEqualTo(targetPosition)) {
+      creep.moveTo(targetPosition);
+    } else {
       if (creep.store.getFreeCapacity() === 0) {
-        creep.transfer(outputContainer, RESOURCE_ENERGY);
+        RESOURCES_ALL.forEach((resourceType) => {
+          creep.transfer(outputContainer, resourceType);
+        });
       }
-    } else if (harvestingResult === ERR_NOT_IN_RANGE) {
-      creep.moveTo(deserializePosition(harvestingPosition));
+      creep.harvest(resource);
     }
   },
 });

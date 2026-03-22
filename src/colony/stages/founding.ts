@@ -107,17 +107,17 @@ export const foundingStage: ColonyStage<"founding"> = {
   planNewCreeps: (colony: Colony) => {
     const founders = colony.creeps.filter((creepRef) => {
       const creep = Resolver.getCreep(creepRef);
-      return hasValue(creep) && creep.memory.role === "founder";
+      return hasValue(creep) && creep.memory.role === "worker";
     });
 
     const founderIntents = colony.spawnIntents.filter(
-      (intent) => intent.role === "founder",
+      (intent) => intent.role === "worker",
     );
 
     const totalFounders = founders.length + founderIntents.length;
 
     return times(8 - totalFounders, () => ({
-      role: "founder" as const,
+      role: "worker" as const,
       targetLevel: 1,
     }));
   },
