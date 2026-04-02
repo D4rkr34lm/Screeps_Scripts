@@ -218,7 +218,7 @@ export function loop() {
       });
 
       if (spawnResult === OK) {
-        colony.spawnIntents.pop();
+        colony.spawnIntents.shift();
         colony.creeps.push(newCreepId);
       }
     }
