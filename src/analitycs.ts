@@ -42,8 +42,6 @@ export function updateAnalyticsMetaWithInboundData(
   };
 }
 
-let analyticsSingleton: Analytics | null = null;
-
 export function initializeAnalyticsMeta(): AnalyticsMeta {
   const initialCurrentSegment = first(SEGMENTS_RESERVED_FOR_ANALYTICS);
   const initialNextSegment = SEGMENTS_RESERVED_FOR_ANALYTICS.find(
@@ -65,13 +63,9 @@ export function initializeAnalyticsMeta(): AnalyticsMeta {
   };
 }
 
-const activeAnalytics: Analytics | null = null;
+let activeAnalytics: Analytics | null = null;
 
 export function instantiateAnalytics(meta: AnalyticsMeta): Analytics {
-  if (hasValue(analyticsSingleton)) {
-    return analyticsSingleton;
-  }
-
   const SERIALIZATION_VERSION = 1;
   const DIVIDER = ",";
 
@@ -162,7 +156,7 @@ export function instantiateAnalytics(meta: AnalyticsMeta): Analytics {
     recordEvent,
     flushEvents,
   };
-  analyticsSingleton = analytics;
+  activeAnalytics = analytics;
 
   return analytics;
 }
