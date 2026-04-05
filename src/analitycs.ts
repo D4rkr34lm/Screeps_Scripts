@@ -7,6 +7,7 @@ import { hasNoValue, hasValue } from "./uitls";
 
 interface PerformanceEvent {
   name: "performance";
+  shard: string;
   data: {
     bucketSize: number;
     usedCPU: number;

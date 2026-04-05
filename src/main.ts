@@ -279,6 +279,7 @@ export function loop() {
 
   analytics.recordEvent({
     name: "performance",
+    shard: Game.shard.name,
     data: {
       bucketSize: Game.cpu.bucket,
       usedCPU: Game.cpu.getUsed(),
