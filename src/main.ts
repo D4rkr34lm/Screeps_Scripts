@@ -14,6 +14,13 @@ import { definedColonyStages, getNextColonyStage } from "./colony/stages";
 import { Task } from "./tasks/createTask";
 import { getScaledBodyParts } from "./roles/bodyComposition";
 import { syncLocalSource } from "./resources";
+import {
+  AnalyticsMeta,
+  initializeAnalyticsMeta,
+  instantiateAnalytics,
+  updateAnalyticsMetaWithInboundData,
+} from "./analitycs";
+import { getInboundMemory } from "./inboundMemory";
 
 const CURRENT_SCRIPT_VERSION = 1;
 
@@ -25,6 +32,7 @@ interface ScriptMeta {
 declare global {
   interface Memory {
     __meta?: ScriptMeta;
+    analyticsMeta?: AnalyticsMeta;
     colonies?: Record<TypedId<Colony>, Colony>;
   }
   interface CreepMemory {
@@ -34,16 +42,30 @@ declare global {
 }
 
 function startLoop() {
-  if (Memory.__meta?.version === CURRENT_SCRIPT_VERSION) {
+  if (
+    hasValue(Memory.__meta) &&
+    hasValue(Memory.analyticsMeta) &&
+    hasValue(Memory.colonies) &&
+    Memory.__meta.version === CURRENT_SCRIPT_VERSION
+  ) {
+    const inboundMemory = getInboundMemory();
+
     const colonies = loadColonies();
+    const analyticsMeta = updateAnalyticsMetaWithInboundData(
+      Memory.analyticsMeta,
+      inboundMemory.readAnalyticsSegments ?? [],
+    );
 
     return {
       colonies,
+      analyticsMeta,
     };
   } else {
     const colonies = values(Game.rooms)
       .map((room) => (room.controller?.my ? initializeColony(room) : null))
       .filter(hasValue);
+
+    const analyticsMeta = initializeAnalyticsMeta();
 
     Memory.__meta = {
       version: CURRENT_SCRIPT_VERSION,
@@ -52,18 +74,22 @@ function startLoop() {
 
     return {
       colonies: keyBy(colonies, (colony) => colony.id),
+      analyticsMeta,
     };
   }
 }
 
 function endLoop(context: ReturnType<typeof startLoop>) {
-  const { colonies } = context;
+  const { colonies, analyticsMeta } = context;
 
   values(colonies).forEach(storeColony);
+  Memory.analyticsMeta = analyticsMeta;
 }
 
 export function loop() {
-  const { colonies } = startLoop();
+  const { colonies, analyticsMeta } = startLoop();
+
+  const analytics = instantiateAnalytics(analyticsMeta);
 
   // Colony execution
   values(colonies).forEach((colony) => {
@@ -251,5 +277,15 @@ export function loop() {
     });
   });
 
-  endLoop({ colonies });
+  analytics.recordEvent({
+    name: "performance",
+    data: {
+      bucketSize: Game.cpu.bucket,
+      usedCPU: Game.cpu.getUsed(),
+    },
+  });
+
+  const updatedAnalyticsMeta = analytics.flushEvents();
+
+  endLoop({ colonies, analyticsMeta: updatedAnalyticsMeta });
 }
