@@ -88,6 +88,10 @@ export function instantiateAnalytics(meta: AnalyticsMeta): Analytics {
     };
     const serialized = JSON.stringify(eventsWrapped);
 
+    console.log(
+      `[INFO][ANALYTICS]: Flushing ${recordedEvents.length} events, total size ${serialized.length} chars`,
+    );
+
     const segmentIndex = meta.currentOutSegment;
 
     if (hasNoValue(segmentIndex)) {
