@@ -71,8 +71,9 @@ export function instantiateAnalytics(meta: AnalyticsMeta): Analytics {
   if (hasValue(analyticsSingleton)) {
     return analyticsSingleton;
   }
+
   const SERIALIZATION_VERSION = 1;
-  const DIVIDER = "|";
+  const DIVIDER = ",";
 
   const currentTick = Game.time;
   const recordedEvents: Event[] = [];

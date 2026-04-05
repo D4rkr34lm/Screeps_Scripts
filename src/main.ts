@@ -21,6 +21,7 @@ import {
   updateAnalyticsMetaWithInboundData,
 } from "./analitycs";
 import { getInboundMemory } from "./inboundMemory";
+import { INBOUND_MEMORY_SEGMENT } from "./constants";
 
 const CURRENT_SCRIPT_VERSION = 1;
 
@@ -39,6 +40,16 @@ declare global {
     role: RoleName;
     assignedTask: TypedId<Task> | null;
   }
+}
+
+function activateMemorySegments() {
+  const requiredMemorySegments = [
+    Memory.analyticsMeta?.currentOutSegment,
+    Memory.analyticsMeta?.nextOutSegment,
+    INBOUND_MEMORY_SEGMENT,
+  ].filter(hasValue);
+
+  RawMemory.setActiveSegments(requiredMemorySegments);
 }
 
 function startLoop() {
@@ -88,6 +99,7 @@ function endLoop(context: ReturnType<typeof startLoop>) {
 
 export function loop() {
   const { colonies, analyticsMeta } = startLoop();
+  activateMemorySegments();
 
   const analytics = instantiateAnalytics(analyticsMeta);
 
