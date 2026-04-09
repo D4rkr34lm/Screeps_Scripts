@@ -22,5 +22,5 @@ export function shiftFromIf<T>(
 ): T | null {
   const index = array.findIndex(predicate);
 
-  return array.splice(index, 1)[0] ?? null;
+  return index !== -1 ? (array.splice(index, 1)[0] ?? null) : null;
 }
