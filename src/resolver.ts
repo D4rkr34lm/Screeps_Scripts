@@ -1,16 +1,10 @@
-import { hasNoValue, TypedId } from "./uitls";
+import { hasNoValue } from "./uitls";
 
-function getSource(id: TypedId<Source>): Source {
-  const result = Game.getObjectById(id as string as Id<Source>);
+type Referenceable = Room | Creep;
 
-  if (hasNoValue(result)) {
-    throw new Error(`Source not found: ${id}`);
-  } else {
-    return result;
-  }
-}
+type Ref<T extends Referenceable> = string & { __refBrand: T };
 
-function getRoom(id: TypedId<Room>): Room {
+function getRoom(id: Ref<Room>): Room {
   const result = Game.rooms[id as string];
 
   if (hasNoValue(result)) {
@@ -20,7 +14,7 @@ function getRoom(id: TypedId<Room>): Room {
   }
 }
 
-function getCreep(id: TypedId<Creep>): Creep | null {
+function getCreep(id: Ref<Creep>): Creep | null {
   const result = Game.creeps[id as string];
 
   if (hasNoValue(result)) {
@@ -31,7 +25,6 @@ function getCreep(id: TypedId<Creep>): Creep | null {
 }
 
 export const Resolver = {
-  getSource,
   getCreep,
   getRoom,
 };

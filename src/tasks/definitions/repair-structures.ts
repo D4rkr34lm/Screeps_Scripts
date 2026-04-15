@@ -1,59 +1,40 @@
-import { isEmpty } from "lodash-es";
 import { ACCEPTABLE_HITS_LOSS } from "../../constants";
 import { hasNoValue } from "../../uitls";
 import { defineTask } from "../defineTask";
 import { getEnergy } from "../../actions/getEnergy";
+import { EnergyOrigin } from "../../transportation";
 
 export const repairStructuresTaskDefinition = defineTask<
   "repair-structures",
-  { energyOrigin: Id<Source>; roomController: Id<StructureController> }
+  { energyOriginId: Id<EnergyOrigin>; targetId: Id<Structure> }
 >({
   name: "repair-structures",
-  execute: ({ creep, energyOrigin }) => {
-    const target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
-      filter: (structure) => structure.hits < structure.hitsMax,
-    });
+  execute: ({ creep, energyOriginId, targetId }) => {
+    const energyOrigin = Game.getObjectById(energyOriginId);
 
-    const source = Game.getObjectById(energyOrigin);
-
-    if (!source || !target) {
-      console.log(
-        "[ERR][TASK:repair-structures]: Invalid energy origin or no structures to repair",
-      );
+    if (hasNoValue(energyOrigin)) {
+      console.log("[ERR][TASK:repair-structures]: Invalid energy origin");
       return;
     }
 
-    const creepMemory = creep.memory as { harvesting?: boolean };
-
-    if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-      creepMemory.harvesting = false;
-    }
-
-    if (creepMemory.harvesting || creep.store[RESOURCE_ENERGY] === 0) {
-      getEnergy(creep);
+    if (creep.store.getUsedCapacity() === 0) {
+      getEnergy(creep, energyOrigin);
     } else {
-      if (creep.repair(target) === ERR_NOT_IN_RANGE) {
-        creep.moveTo(target, { visualizePathStyle: { stroke: "#ffaa00" } });
+      const target = Game.getObjectById(targetId);
+
+      if (hasNoValue(target)) {
+        console.log("[ERR][TASK:repair-structures]: Invalid target");
+        return;
       }
+
+      creep.repair(target);
     }
   },
-  isFinished: ({ roomController }) => {
-    const controller = Game.getObjectById(roomController);
+  isFinished: ({ targetId }) => {
+    const target = Game.getObjectById(targetId);
 
-    if (hasNoValue(controller)) {
-      console.log("[ERR][TASK:repair-structures]: Invalid room controller");
-      return true;
-    }
-
-    const room = controller.room;
-
-    const damagedStructures = room
-      .find(FIND_STRUCTURES)
-      .filter(
-        (structure) =>
-          structure.hits < structure.hitsMax - ACCEPTABLE_HITS_LOSS,
-      );
-
-    return isEmpty(damagedStructures);
+    return (
+      hasNoValue(target) || target.hits <= target.hitsMax - ACCEPTABLE_HITS_LOSS
+    );
   },
 });

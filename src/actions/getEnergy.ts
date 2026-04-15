@@ -1,5 +1,6 @@
 import { first } from "lodash-es";
 import { hasNoValue, hasValue } from "../uitls";
+import { EnergyOrigin } from "../transportation";
 
 function getBestSourceToMine(creep: Creep) {
   const sources = creep.room.find(FIND_SOURCES);
@@ -30,7 +31,7 @@ function getBestContainerToWithdraw(creep: Creep) {
   return originContainer;
 }
 
-export function getEnergy(creep: Creep) {
+export function getEnergy(creep: Creep, energyOrigin: EnergyOrigin) {
   const originContainer = getBestContainerToWithdraw(creep);
 
   if (hasValue(originContainer)) {

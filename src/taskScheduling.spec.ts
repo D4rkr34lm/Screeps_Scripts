@@ -8,7 +8,7 @@ import {
   TaskAssignmentUpdate,
 } from "./taskScheduling";
 import { definedTasks } from "./tasks/definitions";
-import { hasNoValue, hasValue, TypedId } from "./uitls";
+import { hasValue, TypedId } from "./uitls";
 import { sortBy } from "lodash-es";
 
 const incompatibleTaskDefinition = defineTask({

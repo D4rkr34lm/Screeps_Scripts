@@ -5,13 +5,13 @@ import { harvestResourceTaskDefinition } from "./harvest-resource";
 import { repairStructuresTaskDefinition } from "./repair-structures";
 import { upgradeControllerTaskDefinition } from "./upgrade-controller";
 
-export const definedTasks = {
-  "fill-spawn": fillSpawnTaskDefinition,
-  "upgrade-controller": upgradeControllerTaskDefinition,
-  "build-structure": buildStructureTaskDefinition,
-  "repair-structures": repairStructuresTaskDefinition,
-  "harvest-resource": harvestResourceTaskDefinition,
-  "attack-creeps": attackCreepsTaskDefinition,
-};
+export const definedTasks = [
+  fillSpawnTaskDefinition,
+  upgradeControllerTaskDefinition,
+  buildStructureTaskDefinition,
+  repairStructuresTaskDefinition,
+  harvestResourceTaskDefinition,
+  attackCreepsTaskDefinition,
+] as const;
 
-export type TaskType = keyof typeof definedTasks;
+export type DefinedTask = (typeof definedTasks)[number];
