@@ -23,7 +23,6 @@
     "prettier": "^3.8.1",
     "rollup": "^4.56.0",
     "rollup-plugin-esbuild": "^6.2.1",
-    "screeps-jest": "^2.0.3",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.1",
     "vite-tsconfig-paths": "^6.0.5",
@@ -32,6 +31,7 @@
   "dependencies": {
     "lodash-es": "^4.17.23",
     "neverthrow": "^8.2.0",
+    "screeps-test-helper": "^1.0.0",
     "uid": "^2.0.2"
   }
 }

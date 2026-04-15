@@ -16,6 +16,7 @@ export default defineConfig({
       enabled: true,
       cleanOnRerun: true,
     },
+    setupFiles: ["./vitest.setup.ts"], // This runs BEFORE imports in your specs
   },
   define: {},
   plugins: [tsconfigPaths()],
