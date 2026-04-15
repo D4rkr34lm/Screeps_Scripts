@@ -1,3 +1,4 @@
+import { uid } from "uid";
 import { TypedId } from "../uitls";
 import { TaskDefinition } from "./defineTask";
 import { TaskType } from "./definitions";
@@ -23,7 +24,7 @@ export function createTask<
   priority: TaskPriority,
 ): Task<Type, Parameters> {
   return {
-    id: `${taskDefinition.name}-${Game.time}-${Math.random().toString(36)}`,
+    id: `${taskDefinition.name}-${Game.time}-${uid()}`,
     type: taskDefinition.name,
     parameters,
     priority,

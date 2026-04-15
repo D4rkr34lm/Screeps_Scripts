@@ -3,7 +3,7 @@ import { definedRoles } from "./roles/definitions";
 import { Task } from "./tasks/createTask";
 import { hasValue, shiftFromIf } from "./uitls";
 
-type TaskAssignmentUpdate = [null, Task] | [Creep, Task] | [Creep, null];
+export type TaskAssignmentUpdate = [null, Task] | [Creep, Task] | [Creep, null];
 
 export function calculateTaskAssignmentUpdates(
   creeps: Creep[],
