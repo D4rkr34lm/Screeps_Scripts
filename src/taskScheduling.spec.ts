@@ -2,12 +2,10 @@ import { describe, expect, it } from "vitest";
 import { mockInstanceOf, mockGlobal } from "screeps-test-helper";
 import { createTask, Task } from "./tasks/createTask";
 import { TaskPriority } from "./tasks/priority";
-import { defineTask } from "./tasks/defineTask";
 import {
   calculateTaskAssignmentUpdates,
   TaskAssignmentUpdate,
 } from "./taskScheduling";
-import { definedTasks } from "./tasks/definitions";
 import { hasValue, TypedId } from "./uitls";
 import { sortBy } from "lodash-es";
 
