@@ -1,7 +1,6 @@
 import { uid } from "uid";
 import { TypedId } from "../uitls";
-import { TaskDefinition } from "./defineTask";
-import { TaskType } from "./definitions";
+import { TaskParameters, TaskType } from "./definitions";
 import { TaskPriority } from "./priority";
 
 export type Task<
@@ -16,16 +15,16 @@ export type Task<
 };
 
 export function createTask<
-  Type extends TaskType,
-  Parameters extends Record<string, unknown>,
+  const TType extends TaskType,
+  TParameters extends TaskParameters<TType> = TaskParameters<TType>,
 >(
-  taskDefinition: TaskDefinition<Type, Parameters>,
-  parameters: Parameters,
+  taskType: TType,
+  parameters: TParameters,
   priority: TaskPriority,
-): Task<Type, Parameters> {
+): Task<TType, TParameters> {
   return {
-    id: `${taskDefinition.name}-${Game.time}-${uid()}`,
-    type: taskDefinition.name,
+    id: `${taskType}-${Game.time}-${uid()}`,
+    type: taskType,
     parameters,
     priority,
     assigneeId: null,

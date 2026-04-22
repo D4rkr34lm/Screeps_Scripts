@@ -11,93 +11,66 @@ import { definedTasks } from "./tasks/definitions";
 import { hasValue, TypedId } from "./uitls";
 import { sortBy } from "lodash-es";
 
-const incompatibleTaskDefinition = defineTask({
-  name: "incompatible",
-  execute: () => {},
-  isFinished: () => false,
-});
-
-describe("calculateTaskAssignmentUpdates", () => {
+describe("Task assignment", () => {
   mockGlobal<Game>("Game", { time: 1000 });
 
-  it("should not assign tasks to creeps with incompatible roles", () => {
-    const mockCreep = mockInstanceOf<Creep>({
-      memory: {
-        role: "brute",
-        assignedTask: null,
-      },
+  function getUnassignedTaskPair({
+    isAssignable = true,
+    priority = TaskPriority.MEDIUM,
+  }: {
+    isAssignable?: boolean;
+    priority?: TaskPriority;
+  }): {
+    creep: Creep;
+    task: Task;
+  } {
+    const task = createTask(
+      "fill-spawn",
+      { targetRoom: "E1S1" as TypedId<Room> },
+      priority,
+    );
+
+    if (isAssignable) {
+      return {
+        task,
+        creep: mockInstanceOf<Creep>({
+          memory: {
+            role: "worker",
+            assignedTask: null,
+          },
+        }),
+      };
+    } else {
+      return {
+        task,
+        creep: mockInstanceOf<Creep>({
+          memory: {
+            role: "brute",
+            assignedTask: null,
+          },
+        }),
+      };
+    }
+  }
+
+  function getAssignedTaskPair({
+    priority = TaskPriority.MEDIUM,
+  }: {
+    priority?: TaskPriority;
+  }): {
+    creep: Creep;
+    task: Task;
+  } {
+    const { task, creep } = getUnassignedTaskPair({
+      isAssignable: true,
+      priority: priority,
     });
 
-    const incompatibleTask = createTask(
-      incompatibleTaskDefinition as any,
-      {},
-      TaskPriority.MEDIUM,
-    );
+    task.assigneeId = creep.name as TypedId<Creep>;
+    creep.memory.assignedTask = task.id as TypedId<Task>;
 
-    const updates = calculateTaskAssignmentUpdates(
-      [mockCreep],
-      [incompatibleTask],
-    );
-
-    expect(updates).toEqual([[mockCreep, null]]);
-  });
-
-  const unassignedTask = createTask(
-    definedTasks["fill-spawn"],
-    { targetRoom: "E1S1" as TypedId<Room> },
-    TaskPriority.MEDIUM,
-  );
-  const assignedTask = createTask(
-    definedTasks["fill-spawn"],
-    { targetRoom: "E1S1" as TypedId<Room> },
-    TaskPriority.MEDIUM,
-  );
-
-  const idleCreep = mockInstanceOf<Creep>({
-    $$typeof: undefined,
-    name: "IdleCreep",
-    memory: {
-      role: "worker",
-      assignedTask: null,
-    },
-  });
-
-  const busyCreep = mockInstanceOf<Creep>({
-    $$typeof: undefined,
-    name: "BusyCreep",
-    memory: {
-      role: "worker",
-      assignedTask: assignedTask.id as TypedId<Task>,
-    },
-  });
-
-  assignedTask.assigneeId = busyCreep.name as TypedId<Creep>;
-
-  it("should prefer assigning tasks to idle creeps", () => {
-    const updates = calculateTaskAssignmentUpdates(
-      [idleCreep, busyCreep],
-      [assignedTask, unassignedTask],
-    );
-
-    const expected = [[idleCreep, unassignedTask]];
-
-    expect(updates).toEqual(expected);
-  });
-
-  const anotherIdleCreep = mockInstanceOf<Creep>({
-    $$typeof: undefined,
-    name: "AnotherIdleCreep",
-    memory: {
-      role: "brute",
-      assignedTask: null,
-    },
-  });
-
-  const anotherUnassignedTask = createTask(
-    definedTasks["attack-creeps"],
-    { controllerId: "Controller1" as Id<StructureController> },
-    TaskPriority.MEDIUM,
-  );
+    return { creep, task };
+  }
 
   function sortTaskUpdates(
     updates: TaskAssignmentUpdate[],
@@ -110,17 +83,56 @@ describe("calculateTaskAssignmentUpdates", () => {
     });
   }
 
-  it("should be able to assign tasks regardless of the order of creeps", () => {
+  it("does not assign tasks to creeps with incompatible roles", () => {
+    const { creep, task } = getUnassignedTaskPair({
+      isAssignable: false,
+      priority: TaskPriority.MEDIUM,
+    });
+
+    const updates = calculateTaskAssignmentUpdates([creep], [task]);
+
+    expect(updates).toEqual([[creep, null]]);
+  });
+
+  it("prefers assigning tasks to idle creeps", () => {
+    const { creep: idleCreep, task: unassignedTask } = getUnassignedTaskPair({
+      priority: TaskPriority.MEDIUM,
+    });
+
+    const { creep: busyCreep, task: assignedTask } = getAssignedTaskPair({
+      priority: TaskPriority.MEDIUM,
+    });
+
+    const updates = calculateTaskAssignmentUpdates(
+      [idleCreep, busyCreep],
+      [assignedTask, unassignedTask],
+    );
+
+    const expected = [[idleCreep, unassignedTask]];
+
+    expect(updates).toEqual(expected);
+  });
+
+  it("is able to assign tasks regardless of the order of creeps", () => {
+    const { creep: idleCreep, task: unassignedTask } = getUnassignedTaskPair({
+      priority: TaskPriority.MEDIUM,
+    });
+
+    const { creep: anotherIdleCreep, task: anotherUnassignedTask } =
+      getUnassignedTaskPair({
+        priority: TaskPriority.MEDIUM,
+      });
+
     const updates1 = sortTaskUpdates(
       calculateTaskAssignmentUpdates(
-        [anotherIdleCreep, idleCreep],
-        [anotherUnassignedTask, unassignedTask],
+        [idleCreep, anotherIdleCreep],
+        [unassignedTask, anotherUnassignedTask],
       ),
     );
 
     const updates2 = sortTaskUpdates([
-      [idleCreep, unassignedTask],
       [anotherIdleCreep, anotherUnassignedTask],
+      [idleCreep, unassignedTask],
     ]);
 
     const expected = sortTaskUpdates([
@@ -133,6 +145,15 @@ describe("calculateTaskAssignmentUpdates", () => {
   });
 
   it("should be able to assign tasks regardless of the order of tasks", () => {
+    const { creep: idleCreep, task: unassignedTask } = getUnassignedTaskPair({
+      priority: TaskPriority.MEDIUM,
+    });
+
+    const { creep: anotherIdleCreep, task: anotherUnassignedTask } =
+      getUnassignedTaskPair({
+        priority: TaskPriority.MEDIUM,
+      });
+
     const updates1 = sortTaskUpdates(
       calculateTaskAssignmentUpdates(
         [idleCreep, anotherIdleCreep],
@@ -154,19 +175,15 @@ describe("calculateTaskAssignmentUpdates", () => {
     expect(updates2).toEqual(expected);
   });
 
-  const lowPriorityTask = createTask(
-    definedTasks["fill-spawn"],
-    { targetRoom: "E1S1" as TypedId<Room> },
-    TaskPriority.LOW,
-  );
-
-  const highPriorityTask = createTask(
-    definedTasks["fill-spawn"],
-    { targetRoom: "E1S1" as TypedId<Room> },
-    TaskPriority.HIGH,
-  );
-
   it("should prefer assigning higher priority tasks", () => {
+    const { creep: idleCreep, task: highPriorityTask } = getUnassignedTaskPair({
+      priority: TaskPriority.HIGH,
+    });
+
+    const { task: lowPriorityTask } = getUnassignedTaskPair({
+      priority: TaskPriority.LOW,
+    });
+
     const updates = calculateTaskAssignmentUpdates(
       [idleCreep],
       [lowPriorityTask, highPriorityTask],
