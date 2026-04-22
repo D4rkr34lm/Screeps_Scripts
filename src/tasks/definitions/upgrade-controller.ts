@@ -4,11 +4,11 @@ import { defineTask } from "../defineTask";
 
 export const upgradeControllerTaskDefinition = defineTask<
   "upgrade-controller",
-  { target: Id<StructureController>; targetLevel: number }
+  { controllerId: Id<StructureController>; targetLevel: number }
 >({
   name: "upgrade-controller",
-  execute: ({ creep, target }) => {
-    const controller = Game.getObjectById(target);
+  execute: ({ creep, controllerId }) => {
+    const controller = Game.getObjectById(controllerId);
 
     if (hasNoValue(controller)) {
       console.log(

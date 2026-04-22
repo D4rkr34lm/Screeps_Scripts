@@ -5,7 +5,7 @@ import { TaskPriority } from "./tasks/priority";
 import {
   calculateTaskAssignmentUpdates,
   TaskAssignmentUpdate,
-} from "./taskScheduling";
+} from "./taskAssignment";
 import { hasValue, TypedId } from "./uitls";
 import { sortBy } from "lodash-es";
 
@@ -142,7 +142,7 @@ describe("Task assignment", () => {
     expect(updates2).toEqual(expected);
   });
 
-  it("should be able to assign tasks regardless of the order of tasks", () => {
+  it("is able to assign tasks regardless of the order of tasks", () => {
     const { creep: idleCreep, task: unassignedTask } = getUnassignedTaskPair({
       priority: TaskPriority.MEDIUM,
     });
@@ -173,7 +173,7 @@ describe("Task assignment", () => {
     expect(updates2).toEqual(expected);
   });
 
-  it("should prefer assigning higher priority tasks", () => {
+  it("prefers assigning higher priority tasks", () => {
     const { creep: idleCreep, task: highPriorityTask } = getUnassignedTaskPair({
       priority: TaskPriority.HIGH,
     });

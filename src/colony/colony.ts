@@ -1,3 +1,4 @@
+import { Ref } from "../resolver";
 import { ClaimedResource, syncLocalSource } from "../resources";
 import { RoleName } from "../roles/definitions";
 import { Task } from "../tasks/createTask";
@@ -12,11 +13,11 @@ export type SpawnIntent = {
 export interface Colony {
   id: TypedId<this>;
   currentStage: ColonyStageName;
-  room: TypedId<Room>;
+  room: Ref<Room>;
   resources: ClaimedResource[];
   tasks: Task[];
   spawnIntents: SpawnIntent[];
-  creeps: Array<TypedId<Creep>>;
+  creeps: Array<Ref<Creep>>;
 }
 
 export function storeColony(colony: Colony) {

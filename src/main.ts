@@ -9,7 +9,7 @@ import {
   loadColonies,
   storeColony,
 } from "./colony/colony";
-import { Resolver } from "./resolver";
+import { Ref, Resolver } from "./resolver";
 import { definedColonyStages, getNextColonyStage } from "./colony/stages";
 import { Task } from "./tasks/createTask";
 import { getScaledBodyParts } from "./roles/bodyComposition";
@@ -34,11 +34,11 @@ declare global {
   interface Memory {
     __meta?: ScriptMeta;
     analyticsMeta?: AnalyticsMeta;
-    colonies?: Record<TypedId<Colony>, Colony>;
+    colonies?: Record<Ref<Colony>, Colony>;
   }
   interface CreepMemory {
     role: RoleName;
-    assignedTask: TypedId<Task> | null;
+    assignedTask: Ref<Task> | null;
   }
 }
 
